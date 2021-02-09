@@ -1,6 +1,6 @@
 # Import libraries
-import numpy as np # NumPy: contains basic numerical routines
-import scipy # SciPy: contains additional numerical routines to numpy
+import numpy as np
+import scipy
 import scipy.sparse as scysparse
 import scipy.sparse.linalg
 import re
