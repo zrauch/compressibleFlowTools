@@ -7,12 +7,31 @@ import re
 import os
 import math
 from math import pi as PI
+from scipy.optimize import fsolve
 
 ## variables
 global gamma, R_SI,R_ENG
 
 gamma = 1.4
 R_SI = 287 # J/kg-K
+R_ENG = 53.353 # ft-lbf/lbm-R -- needs multiplied by g for most applications
+
+def massFlow(p0,T0,A,M):
+	mdot = p0*A/np.sqrt(T0)*np.sqrt(gamma/R_SI)*D(M,gamma)[0]
+	return mdot
+
+def solveMfromMassFlow(mdot,p0,T0,A,regime):
+	LHS = mdot*np.sqrt(T0)/(p0*A)*np.sqrt(R_SI/gamma)
+	def equation(x):
+		RHS = x / (1+(gamma-1)/2 * x**2)**((gamma+1)/(2*(gamma-1)))
+		return RHS-LHS
+
+	if regime == 'subsonic':
+		M = fsolve(equation,0.5)
+	elif regime == 'supersonic':
+		M = fsolve(equation,2.5)
+	return M[0]
+
 
 
 def D(M,gamma): # mass flow function, see Mattingly and Boyer
@@ -122,4 +141,96 @@ def normalShockCalculator(M,gamma,printout): # normal shock calculator, equation
 		print("T2/T1 =",T2_T1)
 		print("rho2/rho1 =",rho2_rho1,"\n")
 	return [M2,p02_p01,p2_p1,T02_T01,T2_T1,rho2_rho1]
+
+def shockAreaIterator(As_At_guess,At,p0,pb):
+	eps = 1 # initialize with eps > delta
+	while eps > 5e-8:
+		Mshock = areaMachRelation(1,1/As_At_guess,2.0)
+		[Tratio,Pratio,rhoRatio] = isentropicRelationCalculator(Mshock,gamma,0)
+		p1 = 1/Pratio*p0
+		[M2,stagPratio,Pratio,stagTratio,Tratio,rhoRatio] = normalShockCalculator(Mshock,gamma,0)
+		pb_guess = Pratio*p1
+		if pb_guess>pb:
+			As_At_guess+=1e-6
+		elif pb_guess<pb:
+			As_At_guess-=1e-6
+		eps = np.abs(pb_guess-pb)/pb
+	As = As_At_guess*At
+	print("Shock Area =",As,"[m2]")
+	return As
+
+
+def lstarFromMach(M,f,D):
+	term1 = -1/(gamma) - (gamma+1)/(2*gamma)*np.log(1.0/(1+(gamma-1)/2))
+	term2 = -1/(gamma*M**2) - (gamma+1)/(2*gamma)*np.log(M**2/(1+(gamma-1)*M**2/2))
+	flD = term1-term2
+	lstar = flD*D/(4*f)
+	return lstar
+
+def MachFromLstar(f,Lstar,D,regime):
+	def equation(x):
+		term1 = -1/(gamma) - (gamma+1)/(2*gamma)*np.log(1/(1+(gamma-1)/2))
+		term2 = -1/(gamma*x**2) - (gamma+1)/(2*gamma)*np.log(x**2/(1+(gamma-1)*x**2/2))
+		return term1-term2-4*f*Lstar/D
+	if regime == 'subsonic':
+		M = fsolve(equation,0.5)
+	elif regime == 'supersonic':
+		M = fsolve(equation,2.5)
+
+	return M[0]
+
+def fannoFlowProperties(M):
+	Trat = ((gamma+1)/2)/(1+(gamma-1)/2*M**2)
+	prat = (1/M)*np.sqrt(Trat)
+	vrat = M*np.sqrt(Trat)
+	stagPrat = (1/M)*(Trat)**((gamma+1)/(2*(1-gamma)))
+	rhorat = 1/vrat
+	return [Trat,prat,vrat,stagPrat,rhorat]
+
+def rayleighStarProperties(M):
+	term = (1+gamma)/(1+gamma*M**2)
+	pratio = term
+	Tratio = M**2 * term**2
+	vratio = term * M**2
+	p0ratio = term * (1 + (gamma-1)/2 * M**2)**(gamma/(gamma-1))
+	T0ratio = term**2 * M**2 *(1+(gamma-1)/2 * M**2)/(1+(gamma-1)/2)
+	return [pratio,Tratio,vratio,p0ratio,T0ratio]
+
+def rayleighPropertyChanges(M1,M2):
+	term1 = 1 + gamma*M1**2
+	term2 = 1 + gamma*M2**2
+	term3 = 1 + (gamma-1)/2 * M1**2
+	term4 = 1 + (gamma-1)/2 * M2**2
+
+	pratio = term1/term2
+	Tratio = (term1/term2)**2 * (M2/M1)**2
+	rhoRatio = (term1/term2) * (M1/M2)**2
+	p0ratio = (term1/term2) * (term4/term3)**(gamma/(gamma-1))
+	T0ratio = (term1/term2)**2 * (M2/M1)**2 * (term4/term3)
+	deltaS_Cp = np.log((M2/M1)**2 * (term1/term2)**((gamma-1)/gamma))
+	return [pratio,Tratio,rhoRatio,p0ratio,T0ratio,deltaS_Cp]
+
+
+def rayleighFlowSolver(value, ratio, regime):
+	def equation(x):
+		term1 = value
+		simp = (1+gamma)/(1+gamma*x**2)
+		if ratio == 'p':
+			term2 = simp * (1 + (gamma-1)/2 * x**2)**(gamma/(gamma-1))
+		elif ratio == 'T':
+			term2 = x**2 * simp**2
+		elif ratio == 'v':
+			term2 = simp * x**2
+		elif ratio == 'p0':
+			term2 = simp * (1 + (gamma-1)/2 * x**2)**(gamma/(gamma-1))
+		elif ratio == 'T0':
+			term2 = simp**2 * x**2 *(1+(gamma-1)/2 * x**2)/(1+(gamma-1)/2)
+		return term2-term1
+
+	if regime == 'subsonic':
+		M = fsolve(equation,0.5)
+	elif regime == 'supersonic':
+		M = fsolve(equation,2.5)
+
+	return M[0]
 
