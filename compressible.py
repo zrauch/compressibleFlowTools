@@ -234,3 +234,31 @@ def rayleighFlowSolver(value, ratio, regime):
 
 	return M[0]
 
+def obliqueShockCalculator(theta, M, gamma):
+    LHS = np.tan(theta) # LHS is constant
+    betaRange = np.linspace(0.001,90,10000) # brute force through all possible beta values
+    for b in betaRange: # loop through range of beta values until the RHS is larger than the LHS (requires computing/precision)
+        RHS = (2/np.tan(b))*(M**2*np.sin(b)**2 - 1)/(M**2*(gamma+np.cos(2*b)) + 2)
+        if RHS > LHS:
+            break
+    term = M**2*np.sin(b)**2 
+    M2 = (1/np.sin(b-theta))*np.sqrt((1 + (gamma-1)/2*term)/(gamma*term - (gamma-1)/2)) # from NASA website
+    T_ratio = (2*gamma*term - (gamma-1))*((gamma-1)*term + 2)/((gamma+1)**2*term) # from NASA website
+    p_ratio = (2*gamma*term - (gamma-1))/(gamma+1) # from NASA website
+    term1 = pow(((gamma+1)*term)/((gamma-1)*term + 2),(gamma/(gamma-1)))
+    term2 = pow(((gamma+1)/(2*gamma*term - (gamma-1))),(1/(gamma-1)))
+    stagp_ratio = term1*term2
+    return b, M2, T_ratio, p_ratio, stagp_ratio
+
+def prandtlMeyerExpansion(M,gamma):
+	nu = np.sqrt((gamma+1)/(gamma-1))*np.arctan(np.sqrt((gamma-1)*(M**2-1)/(gamma+1))) - np.arctan(np.sqrt(M**2-1))
+	return nu
+
+def solvePMexpansion(nu,gamma):
+	M2guess = 1.5
+	def eqn(x,*data):
+		nu,gamma = data
+		LHS = nu
+		RHS = np.sqrt((gamma+1)/(gamma-1))*np.arctan(np.sqrt((gamma-1)*(x**2-1)/(gamma+1))) - np.arctan(np.sqrt(x**2-1))
+		return RHS-LHS
+	return fsolve(eqn,M2guess,args=(nu,gamma))[0]
