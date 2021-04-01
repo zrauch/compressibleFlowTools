@@ -234,15 +234,21 @@ def rayleighFlowSolver(value, ratio, regime):
 
 	return M[0]
 
-def obliqueShockCalculator(theta, M, gamma):
-    LHS = np.tan(theta) # LHS is constant
-    betaRange = np.linspace(0.001,90,10000) # brute force through all possible beta values
-    for b in betaRange: # loop through range of beta values until the RHS is larger than the LHS (requires computing/precision)
-        RHS = (2/np.tan(b))*(M**2*np.sin(b)**2 - 1)/(M**2*(gamma+np.cos(2*b)) + 2)
-        if RHS > LHS:
-            break
-    term = M**2*np.sin(b)**2 
-    M2 = (1/np.sin(b-theta))*np.sqrt((1 + (gamma-1)/2*term)/(gamma*term - (gamma-1)/2)) # from NASA website
+def obliqueShockCalculator(theta, M, gamma, shockType):
+    #betaRange = np.linspace(0.001,np.pi/2,1001) # brute force through all possible beta values
+    #for b in betaRange: # loop through range of beta values until the RHS is larger than the LHS (requires computing/precision)
+    def equation(x):
+    	LHS = np.tan(theta) # LHS is constant
+    	RHS = (2/np.tan(x))*(M**2*np.sin(x)**2 - 1)/(M**2*(gamma+np.cos(2*x)) + 2)
+    	return RHS-LHS
+
+    if shockType == 'Weak':
+    	b = fsolve(equation,1e-5)[0]
+    elif shockType == 'Strong':
+    	b = fsolve(equation,np.pi/2-1e-5)[0]
+
+    term = M**2*np.sin(b)**2
+    M2 = np.sqrt((1/np.sin(b-theta)**2) * (1 + (gamma-1)/2*term)/(gamma*term - (gamma-1)/2)) # from NASA website
     T_ratio = (2*gamma*term - (gamma-1))*((gamma-1)*term + 2)/((gamma+1)**2*term) # from NASA website
     p_ratio = (2*gamma*term - (gamma-1))/(gamma+1) # from NASA website
     term1 = pow(((gamma+1)*term)/((gamma-1)*term + 2),(gamma/(gamma-1)))
