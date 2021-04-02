@@ -243,9 +243,9 @@ def obliqueShockCalculator(theta, M, gamma, shockType):
     	return RHS-LHS
 
     if shockType == 'Weak':
-    	b = fsolve(equation,1e-5)[0]
+    	b = fsolve(equation,0.2)[0]
     elif shockType == 'Strong':
-    	b = fsolve(equation,np.pi/2-1e-5)[0]
+    	b = fsolve(equation,np.pi/2-0.2)[0]
 
     term = M**2*np.sin(b)**2
     M2 = np.sqrt((1/np.sin(b-theta)**2) * (1 + (gamma-1)/2*term)/(gamma*term - (gamma-1)/2)) # from NASA website
@@ -255,6 +255,25 @@ def obliqueShockCalculator(theta, M, gamma, shockType):
     term2 = pow(((gamma+1)/(2*gamma*term - (gamma-1))),(1/(gamma-1)))
     stagp_ratio = term1*term2
     return b, M2, T_ratio, p_ratio, stagp_ratio
+
+def obliqueShockCalculator2(beta, M, gamma):
+    #betaRange = np.linspace(0.001,np.pi/2,1001) # brute force through all possible beta values
+    #for b in betaRange: # loop through range of beta values until the RHS is larger than the LHS (requires computing/precision)
+    def equation(x):
+    	LHS = np.tan(x) # LHS is constant
+    	RHS = (2/np.tan(beta))*(M**2*np.sin(beta)**2 - 1)/(M**2*(gamma+np.cos(2*beta)) + 2)
+    	return RHS-LHS
+
+    theta = fsolve(equation,0.2)[0]
+
+    term = M**2*np.sin(beta)**2
+    M2 = np.sqrt((1/np.sin(beta-theta)**2) * (1 + (gamma-1)/2*term)/(gamma*term - (gamma-1)/2)) # from NASA website
+    T_ratio = (2*gamma*term - (gamma-1))*((gamma-1)*term + 2)/((gamma+1)**2*term) # from NASA website
+    p_ratio = (2*gamma*term - (gamma-1))/(gamma+1) # from NASA website
+    term1 = pow(((gamma+1)*term)/((gamma-1)*term + 2),(gamma/(gamma-1)))
+    term2 = pow(((gamma+1)/(2*gamma*term - (gamma-1))),(1/(gamma-1)))
+    stagp_ratio = term1*term2
+    return theta, M2, T_ratio, p_ratio, stagp_ratio
 
 def prandtlMeyerExpansion(M,gamma):
 	nu = np.sqrt((gamma+1)/(gamma-1))*np.arctan(np.sqrt((gamma-1)*(M**2-1)/(gamma+1))) - np.arctan(np.sqrt(M**2-1))
