@@ -1,13 +1,12 @@
-# Import libraries
 import numpy as np
-import scipy
-import scipy.sparse as scysparse
-import scipy.sparse.linalg
-import re
-import os
+from numpy.linalg import inv
+import scipy as sp
+from scipy.signal import unit_impulse
+import sympy as sym
 import math
-from math import pi as PI
+import sys,os
 from scipy.optimize import fsolve
+import spatial_discretization
 
 ## variables
 global gamma, R_SI,R_ENG
@@ -287,3 +286,67 @@ def solvePMexpansion(nu,gamma):
 		RHS = np.sqrt((gamma+1)/(gamma-1))*np.arctan(np.sqrt((gamma-1)*(x**2-1)/(gamma+1))) - np.arctan(np.sqrt(x**2-1))
 		return RHS-LHS
 	return fsolve(eqn,M2guess,args=(nu,gamma))[0]
+
+##### The following 5 functions are necessary for solving generalized 1D flow problems #####
+### see examples
+def RK4_generalized1D(M,x,dx,flowClass, sonicPoint):
+	# numerical evaluation of Mach number integral -- depends on T0(x)
+	k1 = generalized1Dflow(x, 			M, 				flowClass,	sonicPoint)
+	k2 = generalized1Dflow(x+0.5*dx, 	M+0.5*k1*dx, 	flowClass,	sonicPoint)
+	k3 = generalized1Dflow(x+0.5*dx, 	M+0.5*k2*dx, 	flowClass,	sonicPoint)
+	k4 = generalized1Dflow(x+dx, 		M+k3*dx, 		flowClass,	sonicPoint)
+	M += dx/6*(k1+2*k2+2*k3+k4)
+	return M
+
+def findSonicLocation(flowClass):
+	def equation(x):
+		dT0_dx = flowClass.energyEquation()
+		A_x, dA_dx = flowClass.flowArea(x)
+		D_x, dD_dx = flowClass.flowDiameter(x)
+		mdot_x, dmdot_dx = flowClass.massflowrate(x)
+		return (-dA_dx/A_x + flowClass.gamma*4*flowClass.f/(2*D_x) + (1+flowClass.gamma)*dT0_dx/(2*(flowClass.T01 + x*dT0_dx)) + (1+flowClass.gamma)*dmdot_dx/mdot_x)
+	
+	x_sonic = fsolve(equation,3)[0]
+	dT0_dx = flowClass.energyEquation()
+	T0_x = flowClass.T01 + x_sonic*dT0_dx
+	A_x, dA_dx = flowClass.flowArea(x_sonic)
+	D_x, dD_dx = flowClass.flowDiameter(x_sonic)
+	mdot_x, dmdot_dx = flowClass.massflowrate(x_sonic)
+	G,dGdx = Gfunction(x_sonic,1,flowClass)
+	b = ((flowClass.gamma+1)/8)*2*flowClass.gamma*(4*flowClass.f/D_x + dT0_dx/T0_x + 2*dmdot_dx/mdot_x)
+	c = ((flowClass.gamma+1)/8)*dGdx
+
+	def equation2(x):
+		return (x**2 + b*x + c)
+
+	dM_dx_subsonic = fsolve(equation2, -0.5)
+	dM_dx_supersonic = fsolve(equation2, 0.5)
+	sonicPoints = [dM_dx_subsonic[0],dM_dx_supersonic[0]]
+
+	return x_sonic,sonicPoints
+
+def Gfunction(x,M,flowClass):
+	z = sym.symbols('z')
+	dT0_dx = flowClass.energyEquation()
+	T0 = flowClass.T01 + z*dT0_dx
+	A_x, dA_dx = flowClass.flowArea(z)
+	D_x, dD_dx = flowClass.flowDiameter(z)
+	mdot_x, dmdot_dx = flowClass.massflowrate(z)
+	G_sym = (-dA_dx/A_x + flowClass.gamma*M**2*4*flowClass.f/(2*D_x) + (1+flowClass.gamma*M**2)*dT0_dx/(2*T0) + (1+flowClass.gamma*M**2)*dmdot_dx/mdot_x) 
+	dG_dx_sym = -2*sym.diff(dA_dx/A_x) + flowClass.gamma*sym.diff(4*flowClass.f/D_x) + (1+flowClass.gamma)*sym.diff(dT0_dx/T0) + 2*(1+flowClass.gamma)*sym.diff(dmdot_dx/mdot_x)
+	if isinstance(G_sym,sym.Basic):
+		G_num = float(G_sym.subs(z,x))
+		dGdx_num = float(dG_dx_sym.subs(z,x))
+		return G_num,dGdx_num
+	else:
+		return G_sym,dG_dx_sym
+
+
+def generalized1Dflow(x,M,flowClass, sonicPoint):
+	if np.abs(M-1)<5e-2: # singularity case, if M is near 1
+		dM_dx = sonicPoint
+	else: # general case
+		psi_M = 1 + (flowClass.gamma-1)/2 * M**2
+		dM_dx = (M*psi_M/(1-M**2)) * Gfunction(x,M,flowClass)[0]
+	return dM_dx
+
