@@ -31,8 +31,6 @@ def solveMfromMassFlow(mdot,p0,T0,A,regime):
 		M = fsolve(equation,2.5)
 	return M[0]
 
-
-
 def D(M,gamma): # mass flow function, see Mattingly and Boyer
 	M_2 = pow(M,2)
 	isen = (1 + ((gamma-1)/2)*M_2)
@@ -112,7 +110,7 @@ def isentropicRelationCalculator(M,gamma,printout): # isentropic relations calcu
 	rho0_rho = isen**(1/(gamma-1))
 
 	if printout:
-		print("Normal Shock Calculator Results")
+		print("Isentropic Flow Calculator Results")
 		print("Give inputs M =",round(M,3),"gamma =",gamma)
 		print("==================================")
 		print("T0/T =",T0_T)
@@ -158,7 +156,7 @@ def shockAreaIterator(As_At_guess,At,p0,pb):
 	print("Shock Area =",As,"[m2]")
 	return As
 
-
+########## FANNO FLOW FUNCTIONS #########
 def lstarFromMach(M,f,D):
 	term1 = -1/(gamma) - (gamma+1)/(2*gamma)*np.log(1.0/(1+(gamma-1)/2))
 	term2 = -1/(gamma*M**2) - (gamma+1)/(2*gamma)*np.log(M**2/(1+(gamma-1)*M**2/2))
@@ -186,6 +184,7 @@ def fannoFlowProperties(M):
 	rhorat = 1/vrat
 	return [Trat,prat,vrat,stagPrat,rhorat]
 
+########## RAYLEIGH FLOW FUNCTIONS #########
 def rayleighStarProperties(M):
 	term = (1+gamma)/(1+gamma*M**2)
 	pratio = term
@@ -208,7 +207,6 @@ def rayleighPropertyChanges(M1,M2):
 	T0ratio = (term1/term2)**2 * (M2/M1)**2 * (term4/term3)
 	deltaS_Cp = np.log((M2/M1)**2 * (term1/term2)**((gamma-1)/gamma))
 	return [pratio,Tratio,rhoRatio,p0ratio,T0ratio,deltaS_Cp]
-
 
 def rayleighFlowSolver(value, ratio, regime):
 	def equation(x):
@@ -233,6 +231,7 @@ def rayleighFlowSolver(value, ratio, regime):
 
 	return M[0]
 
+######### OBLIQUE SHOCK CALCULATORS ##########
 def obliqueShockCalculator(theta, M, gamma, shockType):
     #betaRange = np.linspace(0.001,np.pi/2,1001) # brute force through all possible beta values
     #for b in betaRange: # loop through range of beta values until the RHS is larger than the LHS (requires computing/precision)
@@ -274,6 +273,7 @@ def obliqueShockCalculator2(beta, M, gamma):
     stagp_ratio = term1*term2
     return theta, M2, T_ratio, p_ratio, stagp_ratio
 
+########## PRANDTL-MEYER EXPANSION CALCULATORS ##########
 def prandtlMeyerExpansion(M,gamma):
 	nu = np.sqrt((gamma+1)/(gamma-1))*np.arctan(np.sqrt((gamma-1)*(M**2-1)/(gamma+1))) - np.arctan(np.sqrt(M**2-1))
 	return nu
@@ -287,17 +287,7 @@ def solvePMexpansion(nu,gamma):
 		return RHS-LHS
 	return fsolve(eqn,M2guess,args=(nu,gamma))[0]
 
-##### The following 5 functions are necessary for solving generalized 1D flow problems #####
-### see examples
-def RK4_generalized1D(M,x,dx,flowClass, sonicPoint):
-	# numerical evaluation of Mach number integral -- depends on T0(x)
-	k1 = generalized1Dflow(x, 			M, 				flowClass,	sonicPoint)
-	k2 = generalized1Dflow(x+0.5*dx, 	M+0.5*k1*dx, 	flowClass,	sonicPoint)
-	k3 = generalized1Dflow(x+0.5*dx, 	M+0.5*k2*dx, 	flowClass,	sonicPoint)
-	k4 = generalized1Dflow(x+dx, 		M+k3*dx, 		flowClass,	sonicPoint)
-	M += dx/6*(k1+2*k2+2*k3+k4)
-	return M
-
+########## GENERALIZED 1D COMPRESSIBLE (INVISCID) FLOW TOOLS ##########
 def findSonicLocation(flowClass):
 	def equation(x):
 		dT0_dx = flowClass.energyEquation()
@@ -306,7 +296,7 @@ def findSonicLocation(flowClass):
 		mdot_x, dmdot_dx = flowClass.massflowrate(x)
 		return (-dA_dx/A_x + flowClass.gamma*4*flowClass.f/(2*D_x) + (1+flowClass.gamma)*dT0_dx/(2*(flowClass.T01 + x*dT0_dx)) + (1+flowClass.gamma)*dmdot_dx/mdot_x)
 	
-	x_sonic = fsolve(equation,3)[0]
+	x_sonic = fsolve(equation,flowClass.xguess)[0]
 	dT0_dx = flowClass.energyEquation()
 	T0_x = flowClass.T01 + x_sonic*dT0_dx
 	A_x, dA_dx = flowClass.flowArea(x_sonic)
@@ -342,9 +332,14 @@ def Gfunction(x,M,flowClass):
 		return G_sym,dG_dx_sym
 
 
-def generalized1Dflow(x,M,flowClass, sonicPoint):
-	if np.abs(M-1)<5e-2: # singularity case, if M is near 1
-		dM_dx = sonicPoint
+def generalized1Dflow(x,M,flowClass):
+	if np.abs(M-1)<5e-2: # singularity case, if M is near 1	
+		if flowClass.MachStart<1:
+			dM_dx = flowClass.dMdx_sp[1] # positive solution -- M should increase towards and after the throat if flow starts subsonic
+		elif flowClass.MachStart>1:
+			dM_dx = flowClass.dMdx_sp[0] # negative solution -- M should decrease towards and after the throat if flow starts supersonic
+		else:
+			print("you can't specify a starting Mach number of 1 you fucking idiot")
 	else: # general case
 		psi_M = 1 + (flowClass.gamma-1)/2 * M**2
 		dM_dx = (M*psi_M/(1-M**2)) * Gfunction(x,M,flowClass)[0]
