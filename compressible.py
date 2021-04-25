@@ -290,14 +290,14 @@ def solvePMexpansion(nu,gamma):
 ########## GENERALIZED 1D COMPRESSIBLE (INVISCID) FLOW TOOLS ##########
 def findSonicLocation(flowClass):
 	def equation(x):
-		dT0_dx = flowClass.energyEquation()
+		dT0_dx = flowClass.energyEquation(x)
 		A_x, dA_dx = flowClass.flowArea(x)
 		D_x, dD_dx = flowClass.flowDiameter(x)
 		mdot_x, dmdot_dx = flowClass.massflowrate(x)
 		return (-dA_dx/A_x + flowClass.gamma*4*flowClass.f/(2*D_x) + (1+flowClass.gamma)*dT0_dx/(2*(flowClass.T01 + x*dT0_dx)) + (1+flowClass.gamma)*dmdot_dx/mdot_x)
 	
 	x_sonic = fsolve(equation,flowClass.xguess)[0]
-	dT0_dx = flowClass.energyEquation()
+	dT0_dx = flowClass.energyEquation(x_sonic)
 	T0_x = flowClass.T01 + x_sonic*dT0_dx
 	A_x, dA_dx = flowClass.flowArea(x_sonic)
 	D_x, dD_dx = flowClass.flowDiameter(x_sonic)
@@ -317,7 +317,7 @@ def findSonicLocation(flowClass):
 
 def Gfunction(x,M,flowClass):
 	z = sym.symbols('z')
-	dT0_dx = flowClass.energyEquation()
+	dT0_dx = flowClass.energyEquation(x)
 	T0 = flowClass.T01 + z*dT0_dx
 	A_x, dA_dx = flowClass.flowArea(z)
 	D_x, dD_dx = flowClass.flowDiameter(z)
