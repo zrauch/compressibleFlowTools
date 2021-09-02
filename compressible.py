@@ -10,28 +10,68 @@ import spatial_discretization
 
 ## variables
 global gamma, R_SI,R_ENG
+R_SI = 287 # J/kg-K -- m^2/s^2-K
+R_ENG = 53.353 # ft-lbf/lbm-R -- needs multiplied by g for most applications
+R_ENG = 1717 # ft^2/s^2-R
+
+inputfound = 0; count = 0; limit = 4
+unitsys = input("Are you working in the Metric (M) or Imperial (I) unit system?\t")
+options = ["Metric","metric","M","English","english","E","Imperial","imperial","I","Ass","ass"]
+if (unitsys in options):
+	inputfound = 1
+
+while (not inputfound):
+	if (count == 0):
+		print(unitsys,"is not a valid input, please enter one of the following:")
+		print(options)
+	unitsys = input("Are you working in the Metric (M) or Imperial (I) unit system?\t")
+	count+=1
+	if (unitsys in options):
+		inputfound = 1
+	elif (count == limit):
+		print("\nHEY! \nstop being a dumbass and enter one of the values above. Last chance.")
+	elif (count > limit):
+		print("\nget outta here you filthy animal")
+		exit(0)
+
+if (options.index(unitsys) < 3):
+	R = R_SI
+else:
+	R = R_ENG
 
 gamma = 1.4
-R_SI = 287 # J/kg-K
-R_ENG = 53.353 # ft-lbf/lbm-R -- needs multiplied by g for most applications
 
+# massFlow :: equation for mass flow rate in terms of Mach, Area, and stagnation conditions
+# inputs :: stagnation pressure, p0			[Pa or psf]
+# 			stagnation temperature,T0 		[K or R]
+# 			area at point of evaluation, A 	[m2 or ft2]
+# 			Mach number, M
+# output :: mass flow rate, mdot 			[kg/s or lbm/s]
 def massFlow(p0,T0,A,M):
-	mdot = p0*A/np.sqrt(T0)*np.sqrt(gamma/R_SI)*D(M,gamma)[0]
+	mdot = p0*A/np.sqrt(T0)*np.sqrt(gamma/R)*D(M,gamma)[0]
 	return mdot
 
+# solveMfromMassFlow :: uses fsolve to determine the solutions of Mach number for which a 
+# 						certain mass flow rate value can be attained at given conditions.
+# inputs :: required mass flow rate, mdot [kg/s or lbm/s]
+#			stagnation pressure, p0			[Pa or psf]
+# 			stagnation temperature,T0 		[K or R]
+# 			area at point of evaluation, A 	[m2 or ft2]
+#			flow regime, regime				['subsonic' or 'supersonic']
+# outputs :: Mach number, M	
 def solveMfromMassFlow(mdot,p0,T0,A,regime):
 	LHS = mdot*np.sqrt(T0)/(p0*A)*np.sqrt(R_SI/gamma)
 	def equation(x):
 		RHS = x / (1+(gamma-1)/2 * x**2)**((gamma+1)/(2*(gamma-1)))
 		return RHS-LHS
-
 	if regime == 'subsonic':
 		M = fsolve(equation,0.5)
 	elif regime == 'supersonic':
 		M = fsolve(equation,2.5)
 	return M[0]
 
-def D(M,gamma): # mass flow function, see Mattingly and Boyer
+# D (mass flow function) :: Returns the mass flow and derivative for a given M and gamma
+def D(M,gamma): # see Mattingly and Boyer
 	M_2 = pow(M,2)
 	isen = (1 + ((gamma-1)/2)*M_2)
 	power = (gamma+1)/(2*(gamma-1))
@@ -43,14 +83,16 @@ def D(M,gamma): # mass flow function, see Mattingly and Boyer
 		dD_dM = (D/M)*(1-M_2)/isen
 	return D,dD_dM
 
-def G(M,gamma): # thrust/momentum flow function, see Mattingly and Boyer
+# G (momentum flow function) :: Returns the thrust/momentum flow and derivative for a given M and gamma
+def G(M,gamma): # see Mattingly and Boyer
 	M_2 = pow(M,2)
 	isen = (1 + ((gamma-1)/2)*M_2)
 	G = (1+gamma*M_2)/pow(isen,(gamma/(gamma-1)))
 	dG_dM = gamma*G*M*(2/(1+gamma*M_2) - 1/(isen))
 	return G, dG_dM
 
-def N(M,gamma): # the no-named function?? see Mattingly and Boyer
+# N (stream flow function) :: Returns the stream flow and derivative for a given M and gamma
+def N(M,gamma): # see Mattingly and Boyer
 	M_2 = pow(M,2)
 	isen = (1 + ((gamma-1)/2)*M_2)
 	N = D(M,gamma)[0]/G(M,gamma)[0]
@@ -60,30 +102,51 @@ def N(M,gamma): # the no-named function?? see Mattingly and Boyer
 		dN_dM = N*(1/M + ((gamma-1)/2)*(M/isen) - (2*gamma*M/(1+gamma*M_2)))
 	return N, dN_dM
 
-def areaMachRelation(M_value,A_ratio,M_init): # derived from mass flow using isentropic relations, see Mattingly&Boyer or Zucrow (1976)
+# areaMachRelation :: uses previously defined D function to iteratively solve for the value of M
+#					  at a downstream location for an isentropic flow
+# inputs ::	known Mach number, M_value
+#			the area ratio of geometry, A_ratio
+# 			initial Mach number guess, M_init
+# outputs :: final (downstream) Mach number, M_new
+# NOTE :: the return value of M_new depends on M_init. if M_init > 1, M_new will be > 1. If M_init < 1, M_new < 1.
+def areaMachRelation(M_value,A_ratio,M_init): # see Mattingly&Boyer or Zucrow (1976)
 	DM = D(M_value,gamma)[0]
 	M_guess = M_init
 	eps = 1 # initialize with eps > delta
-	while (eps > 1e-6):
+	while eps > 1e-8:
 		D_guess,dD_dM_guess = D(M_guess,gamma)
 		M_new = M_guess + (A_ratio*DM-D_guess)/dD_dM_guess
 		eps = np.abs(M_new-M_guess)
 		M_guess = M_new
 	return M_new
 
-def newtonRaphsonMach(M1,A_ratio): # newton-raphson solver for M2 given M1 and area ratio of a nozzle
+# newtonRaphsonMach :: uses previously defined D function to iteratively solve for the value of Mach number
+# 					   downstream in a subsonic flow knowing the geometry.
+# inputs :: initial mach number, M1
+# 			area ratio of geometry, A_ratio
+# outputs :: final (downstream) Mach number, M_guess
+# NOTE :: this function only works for subsonic relationships, areaMachRelation will work for subsonic or
+# 		  supersonic, depending on the given M_init
+def areaMachSubsonic(M1,A_ratio): # newton-raphson solver for M2 given M1 and area ratio of a nozzle
 	eps = 1
 	D1,unused = D(M1,gamma)
 	M_guess = 0.5
-	while eps > 1e-4:
+	while eps > 1e-8:
 		D_guess,dD_dM_guess = D(M_guess,gamma)
 		M2 = M_guess + (D1*A_ratio-D_guess)/dD_dM_guess
 		eps = np.absolute(M2-M_guess)
 		M_guess = M2
 	return M_guess
 
-def newtonRaphsonMachSHOCK(N1,gamma): # newton-raphson solver for M2 after a shock, given N(M1)
+# newtonRaphsonShock :: uses previously defined N function to iteratively solve for the value of Mach number
+# downstream in a flow, since N is constant across a shock.
+# inputs :: upstream SUPERSONIC mach number, M1
+# 			ratio of specific heats of working fluid, gamma
+# outputs :: the subsonic Mach number which will be immediately on the downstream side of the shock, M_guess
+# NOTE :: This function only works if N1 was evaluated for a Mach number > 1. Otherwise, it will fail
+def newtonRaphsonShock(M1,gamma):
 	eps = 1
+	N1, unused = N(M1,gamma)
 	M_guess = 0.75
 	while eps > 1e-4:
 		N_guess,dN_dM_guess = N(M_guess,gamma)
@@ -92,7 +155,13 @@ def newtonRaphsonMachSHOCK(N1,gamma): # newton-raphson solver for M2 after a sho
 		M_guess = M2
 	return M_guess
 
-def newtonRaphsonSupersonic(M1,gamma): # newton-raphson solver for a supersonic M2 given a subsonic M1
+# newtonRaphsonSupersonic :: uses previously defined D function to iteratively solve for the value of Mach number
+# downstream in a flow which develops from subsonic to supersonic.
+# inputs :: upstream SUBSONIC Mach number, M1
+# 			ratio of specific heats of working fluid, gamma
+# outputs :: the supersonic Mach number after the flow choke, M_guess
+# NOTE :: this function requires M1 < 1 to be correct!
+def newtonRaphsonSupersonic(M1,gamma):
 	eps = 1
 	D1,unused = D(M1,gamma)
 	M_guess = 2.5
@@ -103,7 +172,9 @@ def newtonRaphsonSupersonic(M1,gamma): # newton-raphson solver for a supersonic 
 		M_guess = M2
 	return M_guess
 
-def isentropicRelationCalculator(M,gamma,printout): # isentropic relations calculator, does not currently include sonic relations
+# isentropicRelationCalculator returns all isentropic ratios given Mach number and gamma for a flow.
+# NOTE: printout is an optional feature which will print out the results to terminal.
+def isentropicRelationCalculator(M,gamma,printout):
 	isen = 1 + (gamma-1)/2*M**2
 	T0_T = isen
 	p0_p = isen**(gamma/(gamma-1))
@@ -119,7 +190,9 @@ def isentropicRelationCalculator(M,gamma,printout): # isentropic relations calcu
 		print("\n")
 	return [T0_T, p0_p, rho0_rho]
 
-def normalShockCalculator(M,gamma,printout): # normal shock calculator, equations derived in Mattingly and Boyer
+# normalShockCalculator returns the values of all property ratios across a normal shock given the upstream Mach number and gamma
+# NOTE: printout is an optional feature which will print out the results to terminal.
+def normalShockCalculator(M,gamma,printout):
 	M2 = np.sqrt(((gamma-1)*M**2 + 2)/(2*gamma*M**2 - (gamma-1)))
 	p02_p01 = ( ((gamma+1)*M**2)/((gamma-1)*M**2 + 2) )**(gamma/(gamma-1)) * ( (gamma+1)/(2*gamma*M**2-(gamma-1)) )**(1/(gamma-1))
 	T2_T1 = (2*gamma*M**2-(gamma-1))*((gamma-1)*M**2+2)/((gamma+1)**2*M**2)
@@ -139,6 +212,12 @@ def normalShockCalculator(M,gamma,printout): # normal shock calculator, equation
 		print("rho2/rho1 =",rho2_rho1,"\n")
 	return [M2,p02_p01,p2_p1,T02_T01,T2_T1,rho2_rho1]
 
+# shockAreaIterator :: returns the geometric area at which a normal shock forms in a flow channel given proper conditions
+# inputs :: Initial guess of the shock location with respect to the throat aream, As_At_guess
+#			throat area, At [m2 or ft2]
+#			upstream stagnation pressure, p0 [Pa or psf]
+# 			back pressure, pb [Pa or psf]
+# outputs :: shock area, As [m2 or ft2]
 def shockAreaIterator(As_At_guess,At,p0,pb):
 	eps = 1 # initialize with eps > delta
 	while eps > 5e-8:
