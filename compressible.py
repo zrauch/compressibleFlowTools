@@ -60,7 +60,7 @@ def massFlow(p0,T0,A,M):
 #			flow regime, regime				['subsonic' or 'supersonic']
 # outputs :: Mach number, M	
 def solveMfromMassFlow(mdot,p0,T0,A,regime):
-	LHS = mdot*np.sqrt(T0)/(p0*A)*np.sqrt(R_SI/gamma)
+	LHS = mdot*np.sqrt(T0)/(p0*A)*np.sqrt(R/gamma)
 	def equation(x):
 		RHS = x / (1+(gamma-1)/2 * x**2)**((gamma+1)/(2*(gamma-1)))
 		return RHS-LHS
