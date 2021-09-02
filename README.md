@@ -10,8 +10,8 @@ ME 510 (Gas Dynamics), AAE 537 (Hypersonic propulsion), and AAE 539 (Rocket Prop
  
 If using option b, add the following lines to your .py script
 import sys
-sys.path
-sys.path.append('~/path/to/repository/compFlowTools')
+\n sys.path
+\n sys.path.append('~/path/to/repository/compFlowTools')
 
 2. Once you have the library in a working location, import the modules you wish to use in your .py script
 --> e.g "from compressible import *" or "import compressible as comp"
