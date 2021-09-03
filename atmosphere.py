@@ -31,7 +31,7 @@ P=D[:,4]
 RHO=D[:,5]
 
 
-def atmosphere4(q,Hvector=None):
+def atmosphere4(q,Hvector):
     # default set GeometricFlag to 1 because who the fuck is going to give geopotential altitude as an input???
     GeometricFlag = 1 
     #varargin = atmosphere4.varargin
