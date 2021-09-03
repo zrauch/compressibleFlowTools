@@ -9,10 +9,19 @@ from scipy.optimize import fsolve
 import spatial_discretization
 
 ## variables
-global gamma, R_SI,R_ENG
-R_SI = 287 # J/kg-K -- m^2/s^2-K
+global gamma, R, Cp, R_SI,CP_SI,R_ENG,CP_ENG
+R_SI = 287 # J/kg-K -- m^2/s^2-K\
+CP_SI = 1004.5 # J/kg-K
 R_ENG = 53.353 # ft-lbf/lbm-R -- needs multiplied by g for most applications
-R_ENG = 1717 # ft^2/s^2-R
+#R_ENG = 1717 # ft^2/s^2-R
+CP_ENG = 0.3 # Btu/lbm-R
+
+global g,convertBTU,StoHR,IN2toFT2,FtoR
+g = 32.174 # [ft-lbm/lbf-s2]
+convertBTU = 778.17 # [ft-lbf/BTU]
+StoHR = 3600 # [s/hr]
+IN2toFT2 = 144 # [144 in2/ft2]
+FtoR = 459.67
 
 inputfound = 0; count = 0; limit = 4
 unitsys = input("Are you working in the Metric (M) or Imperial (I) unit system?\t")
@@ -20,7 +29,7 @@ options = ["Metric","metric","M","English","english","E","Imperial","imperial","
 if (unitsys in options):
 	inputfound = 1
 
-while (not inputfound):
+while (inputfound != 1):
 	if (count == 0):
 		print(unitsys,"is not a valid input, please enter one of the following:")
 		print(options)
@@ -36,8 +45,10 @@ while (not inputfound):
 
 if (options.index(unitsys) < 3):
 	R = R_SI
+	Cp = CP_SI
 else:
 	R = R_ENG
+	Cp = CP_ENG
 
 gamma = 1.4
 
@@ -65,12 +76,16 @@ gamma = 1.4
 # outputs:
 # 1. specific thrust, ST [s]
 # 2. specific fuel consumption, SFC [check these units]
-def turbofan(M,p,T,pi_c,pi_f,B):
+def turbofan(M, p, T, pi_c, pi_f, B, T04, delta_HB):
 	## IDEAL Turbofan Calculations
 	a0 = np.sqrt(gamma*R*g*T)
 	u0 = M*a0
 	# 0 --> 2 : compression through ideal diffuser
-	p02 = p00 = p*(1+((gamma-1)/2)*M**2)**(gamma/(gamma-1))
+	if M<1:
+		p02 = p*(1+((gamma-1)/2)*M**2)**(gamma/(gamma-1))
+	elif M>=1 and M<3:
+		p02 = p*(1 - 0.075*(M-1)**1.35)
+	
 	T02 = T00 = T*(1+((gamma-1)/2)*M**2)
 	tau_r = T00/T
 
@@ -110,8 +125,9 @@ def turbofan(M,p,T,pi_c,pi_f,B):
 	T9_p = T09_p/(1+(gamma-1)/2*M9_p**2)
 	a9 = np.sqrt(gamma*R*g*T9_p)
 	u9_p = M9_p*a9
-	ST = ((a0*M/(1+B))*((u9/u0 - 1) + B*(u9_p/u0 - 1)))/g
-	SFC = f/((1+B)*ST)*StoHR
+
+	ST = ((a0*M/(1+B))*((u9/u0 - 1) + B*(u9_p/u0 - 1)))
+	SFC = f/((1+B)*ST)*g#*StoHR
 	return [ST, SFC]
 
 # turbojet :: a function to solve the complete IDEAL turbojet engine system.
@@ -126,7 +142,7 @@ def turbofan(M,p,T,pi_c,pi_f,B):
 # outputs:
 # 1. specific thrust, ST [s]
 # 2. specific fuel consumption, SFC [check these units]
-def turbojet(M,p,T,pi_c):
+def turbojet(M,p,T,pi_c,delta_HB):
 	## IDEAL Turbofan Calculations
 	a0 = np.sqrt(gamma*R*g*T)
 	u0 = M*a0

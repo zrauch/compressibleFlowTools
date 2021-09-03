@@ -60,7 +60,7 @@ def atmosphere4(q,Hvector):
     # Convert from geometric altitude to geopotental altitude, if necessary.
     if GeometricFlag:
         Hgeopvector=(dot(RE,Hvector)) / (RE + Hvector)
-        disp('Convert from geometric altitude to geopotential altitude in feet')
+        #disp('Convert from geometric altitude to geopotential altitude in feet')
     else:
         Hgeopvector=copy(Hvector)
 

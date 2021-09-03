@@ -14,32 +14,32 @@ R_SI = 287 # J/kg-K -- m^2/s^2-K
 R_ENG = 53.353 # ft-lbf/lbm-R -- needs multiplied by g for most applications
 R_ENG = 1717 # ft^2/s^2-R
 
-inputfound = 0; count = 0; limit = 4
-unitsys = input("Are you working in the Metric (M) or Imperial (I) unit system?\t")
-options = ["Metric","metric","M","English","english","E","Imperial","imperial","I","Ass","ass"]
-if (unitsys in options):
-	inputfound = 1
+# inputfound = 0; count = 0; limit = 4
+# unitsys = input("Are you working in the Metric (M) or Imperial (I) unit system?\t")
+# options = ["Metric","metric","M","English","english","E","Imperial","imperial","I","Ass","ass"]
+# if (unitsys in options):
+# 	inputfound = 1
 
-while (not inputfound):
-	if (count == 0):
-		print(unitsys,"is not a valid input, please enter one of the following:")
-		print(options)
-	unitsys = input("Are you working in the Metric (M) or Imperial (I) unit system?\t")
-	count+=1
-	if (unitsys in options):
-		inputfound = 1
-	elif (count == limit):
-		print("\nHEY! \nstop being a dumbass and enter one of the values above. Last chance.")
-	elif (count > limit):
-		print("\nget outta here you filthy animal")
-		exit(0)
+# while (not inputfound):
+# 	if (count == 0):
+# 		print(unitsys,"is not a valid input, please enter one of the following:")
+# 		print(options)
+# 	unitsys = input("Are you working in the Metric (M) or Imperial (I) unit system?\t")
+# 	count+=1
+# 	if (unitsys in options):
+# 		inputfound = 1
+# 	elif (count == limit):
+# 		print("\nHEY! \nstop being a dumbass and enter one of the values above. Last chance.")
+# 	elif (count > limit):
+# 		print("\nget outta here you filthy animal")
+# 		exit(0)
 
-if (options.index(unitsys) < 3):
-	R = R_SI
-else:
-	R = R_ENG
+# if (options.index(unitsys) < 3):
+# 	R = R_SI
+# else:
+# 	R = R_ENG
 
-gamma = 1.4
+# gamma = 1.4
 
 # massFlow :: equation for mass flow rate in terms of Mach, Area, and stagnation conditions
 # inputs :: stagnation pressure, p0			[Pa or psf]
