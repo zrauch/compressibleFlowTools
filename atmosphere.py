@@ -5,13 +5,11 @@
 from numpy import *
 import matplotlib
 import matplotlib.pyplot as plt
+# setunits defines unit system-dependent things like R, g, and Cp
+from setunits import *
 
 # define global constants for both atmosphere functions
-global R,gamma,g0,RE,D,K,T,H,P,RHO
-
-R=1716.55
-gamma=1.4
-g0=32.17405
+global RE,D,K,T,H,P,RHO
 RE=20926476
 
 D=array(
