@@ -326,36 +326,38 @@ qlist = [800, 1200, 1600] # given values of dynamic pressure [lbf/ft^2]
 altrange = linspace(0,100000,101)
 M_list = linspace(0.4,10,1001)
 
-#atmosphere4 test case
-# plot output results for flight corridor over a range of altitudes
-fig,ax1 = plt.subplots()
-plt.title(r"Mach Number with Altitude for Fixed Dynamic Pressures")
-ax1.set_xlabel(r"Mach Number")
-ax1.set_ylabel(r"Altitude [ft]")
-for i,q in enumerate(qlist):
-    [Mach,T0,Ts,P0,Ps,rho,hgeop] = atmosphere4(q,altrange)
-    ax1.plot(Mach,altrange,label="q="+str(q)+"psf")
-ax1.grid()
-plt.legend()
-fig.tight_layout()
-plt.savefig('altitude_Mach.pdf')
-plt.close()
+test = 0
+if test:
+    #atmosphere4 test case
+    # plot output results for flight corridor over a range of altitudes
+    fig,ax1 = plt.subplots()
+    plt.title(r"Mach Number with Altitude for Fixed Dynamic Pressures")
+    ax1.set_xlabel(r"Mach Number")
+    ax1.set_ylabel(r"Altitude [ft]")
+    for i,q in enumerate(qlist):
+        [Mach,T0,Ts,P0,Ps,rho,hgeop] = atmosphere4(q,altrange)
+        ax1.plot(Mach,altrange,label="q="+str(q)+"psf")
+    ax1.grid()
+    plt.legend()
+    fig.tight_layout()
+    plt.savefig('altitude_Mach.pdf')
+    plt.close()
 
-#atmosphereMach test case
-fig,ax1 = plt.subplots()
-for i,q in enumerate(qlist):
-    [T0,Ts,P0,Ps,h] = atmosphereMach(q,M_list)
-    plt.plot(M_list,h,label='q Trajectory:'+str(q))
+    #atmosphereMach test case
+    fig,ax1 = plt.subplots()
+    for i,q in enumerate(qlist):
+        [T0,Ts,P0,Ps,h] = atmosphereMach(q,M_list)
+        plt.plot(M_list,h,label='q Trajectory:'+str(q))
 
-fig,ax1 = plt.subplots()
-plt.title(r"Mach Number with Altitude for Fixed Dynamic Pressures")
-ax1.set_xlabel(r"Mach Number")
-ax1.set_ylabel(r"Altitude [ft]")
-for i,q in enumerate(qlist):
-    [T0,Ts,P0,Ps,h] = atmosphereMach(q,M_list)
-    plt.plot(M_list,h,label='q Trajectory:'+str(q))
-ax1.grid()
-plt.legend()
-fig.tight_layout()
-plt.savefig('altitude_Mach_2.pdf')
-plt.close()
+    fig,ax1 = plt.subplots()
+    plt.title(r"Mach Number with Altitude for Fixed Dynamic Pressures")
+    ax1.set_xlabel(r"Mach Number")
+    ax1.set_ylabel(r"Altitude [ft]")
+    for i,q in enumerate(qlist):
+        [T0,Ts,P0,Ps,h] = atmosphereMach(q,M_list)
+        plt.plot(M_list,h,label='q Trajectory:'+str(q))
+    ax1.grid()
+    plt.legend()
+    fig.tight_layout()
+    plt.savefig('altitude_Mach_2.pdf')
+    plt.close()
