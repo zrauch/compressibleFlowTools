@@ -49,8 +49,9 @@ if (options.index(unitsys) < 3):
 else:
 	R = R_ENG
 	Cp = CP_ENG
+# calculate gamma based on the defined value of Cp
+gamma = Cp/(Cp-R/convertBTU)
 
-gamma = 1.4
 
 ################################################################################################### 
 # enginesystems.py is a library intended to contain all relevant python codes developed for the
@@ -83,8 +84,12 @@ def turbofan(M, p, T, pi_c, pi_f, B, T04, delta_HB):
 	# 0 --> 2 : compression through ideal diffuser
 	if M<1:
 		p02 = p*(1+((gamma-1)/2)*M**2)**(gamma/(gamma-1))
-	elif M>=1 and M<3:
+	elif M>=1 and M<5:
 		p02 = p*(1 - 0.075*(M-1)**1.35)
+	elif M>=5:
+		p02 = 800.0/(M**4 + 935)
+	else:
+		print(M,"what the fuck")
 	
 	T02 = T00 = T*(1+((gamma-1)/2)*M**2)
 	tau_r = T00/T
@@ -103,7 +108,8 @@ def turbofan(M, p, T, pi_c, pi_f, B, T04, delta_HB):
 	tau_b = T04/T03
 	tau_lamba = tau_r*tau_c*tau_b
 	p04 = p03
-	f = Cp*(T04-T03)/(delta_HB-Cp*T04)
+	f = Cp*(T04-T03)/delta_HB
+	print(M,T04,T03,f)
 	#f = Cp*T00/delta_HB * (tau_lamba - tau_r*tau_c)
 
 	# 4 --> 5: expansion through ideal turbine
@@ -123,8 +129,8 @@ def turbofan(M, p, T, pi_c, pi_f, B, T04, delta_HB):
 	u9 = u0*np.sqrt(tau_b*(tau_r*tau_c*tau_t - 1)/(tau_r-1))
 	M9_p = np.sqrt((2/(gamma-1))*(tau_r*tau_F - 1))
 	T9_p = T09_p/(1+(gamma-1)/2*M9_p**2)
-	a9 = np.sqrt(gamma*R*g*T9_p)
-	u9_p = M9_p*a9
+	a9_p = np.sqrt(gamma*R*g*T9_p)
+	u9_p = M9_p*a9_p
 
 	ST = ((a0*M/(1+B))*((u9/u0 - 1) + B*(u9_p/u0 - 1)))
 	SFC = f/((1+B)*ST)*g#*StoHR
