@@ -197,7 +197,7 @@ def atmosphereMach(q,M_list):
     P0_list = []; P_list = []
     for M in M_list:
         # atmosphereMach operates over a range of Mach numbers, not a range of altitudes like atmosphere4
-        p_static = (2*q/gamma) * (1/M**2)
+        p_static = 2.0*q/(gamma*M**2)
         # next determine which range of h you are in based on Mach number and static p
         if(p_static > P[1]):
             index = 0
@@ -315,7 +315,7 @@ def atmosphereMach(q,M_list):
             exit(0)
 
         T0_list.append(temp*(1 + ((gamma-1)/2)*M**2))
-        P0_list.append(p_static*(1 + ((gamma-1)/2)*M**2)**(gamma/(gamma-1)))
+        P0_list.append(p_static* (1 + (gamma-1)/2*M**2)**(gamma/(gamma-1)))
         P_list.append(p_static)
 
     return [T0_list,T_list,P0_list,P_list,altitude_list]

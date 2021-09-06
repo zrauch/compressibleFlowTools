@@ -27,7 +27,7 @@ def milstd_5008_B(M):
 	elif M>=5:
 		p02_p0 = 800/(M**4 + 935)
 	else:
-		print("wtf r u doing bro, M can't be negative")
+		print("M cannot be negative!")
 	return p02_p0
 
 # turbofan :: a function to solve the complete IDEAL turbofan engine system.
@@ -44,53 +44,37 @@ def milstd_5008_B(M):
 # outputs:
 # 1. specific thrust, ST [s]
 # 2. specific fuel consumption, SFC [check these units]
-def turbofan(M, p, T, pi_c, pi_f, B, T04, delta_HB):
+def turbofan(M,h, p, T, pi_c, pi_f, B, T04, delta_HB):
 	## IDEAL Turbofan Calculations
-	u0 = M*np.sqrt(gamma*R*T)      
+	u0 = M*np.sqrt(gamma*R*T)
 	# 0 --> 2 : compression through ideal diffuser
-	
-	p0 = p*(1+((gamma-1)/2)*M**2)**(gamma/(gamma-1))
+	p0 = p * (1 + ((gamma-1)/2)*M**2)**(gamma/(gamma-1))
 	T02 = T00 = T*(1+((gamma-1)/2)*M**2)
 	p02 = p0*milstd_5008_B(M)
-
 	# 2 --> 3: compression through ideal compressor
 	p03 = pi_c*p02
 	T03 = T02*(pi_c)**((gamma-1)/gamma)
-
 	# 2 --> 3' : compression through fan
 	p03_p = pi_f*p02
 	T03_p = T02*(pi_f)**((gamma-1)/gamma)
-
 	# 3 --> 4: isobaric combustion process
 	p04 = p03
 	f = Cp*(T04-T03)/(delta_HB-Cp*T04)
-
-
 	# 4 --> 5: expansion through ideal turbine
-	T05 = T04*(1 - (T02/T04)*((T03/T02-1) + B*(T03_p/T02-1)))
-	p05 = p04*(T05/T04)**((gamma-1)/gamma)
-
+	T05 = T04 - T03 + T02 - B*(T03_p - T02) # assuming constant cp across engine
+	p05 = p04*(T05/T04)**(gamma/(gamma-1))
 	# 5 -- 9: expansion through ideal nozzle
 	p09 = p05
 	T09 = T05
-
 	## 3' --> 9': isentropic nozzle flow
 	p09_p = p03_p
 	T09_p = T03_p
-
 	u9 = np.sqrt(convertBTU*g* 2*Cp*T09*(1 - (p/p09)**((gamma-1)/gamma) ))
 	u9_p = np.sqrt(convertBTU*g* 2*Cp*T03_p*(1 - (p/p03_p)**((gamma-1)/gamma)))
 
-	tau_b = T04/T03; tau_r = T00/T; tau_c = T03/T02; tau_t = T05/T04; tau_F = T03_p/T02
-	u9 = u0*np.sqrt(tau_b*(tau_r*tau_c*tau_t - 1)/(tau_r-1))
-	M9_p = np.sqrt((2/(gamma-1))*(tau_r*tau_F - 1))
-	T9_p = T09_p/(1+(gamma-1)/2*M9_p**2)
-	a9 = np.sqrt(gamma*R*T9_p)
-	u9_p = M9_p*a9
-
-	ST = ( u0/(1+B) * ((u9/u0 - 1) + B*(u9_p/u0 - 1)) )/g
-	SFC = f/((1+B)*ST)#*StoHR
-	return [ST, SFC]
+	specificThrust = (u0/(1+B)*((u9/u0 - 1) + B*(u9_p/u0 - 1)))/g
+	Isp = (((1+f)*u9-u0) + B*(u9_p-u0))/(f*g)
+	return [specificThrust, Isp]
 
 # turbojet :: a function to solve the complete IDEAL turbojet engine system.
 # Note that the equations derived for use in this function depend on some critical assumptions,
@@ -129,7 +113,7 @@ def turbojet(M, p, T, pi_c, T04, delta_HB):
 	# 4 --> 5: expansion through ideal turbine
 	T05 = T04*(1 - (T02/T04)*(tau_c-1))/(1+f)
 	tau_t = T05/T04
-	p05 = p04*tau_t**((gamma-1)/gamma)
+	p05 = p04*(T05/T04)**(gamma/(gamma-1))
 
 	# 7 --> 9: Nozzle
 	T09 = T05
@@ -166,12 +150,12 @@ def afterburningTurbojet(M, p, T, pi_c, T04, T07, delta_HB):
 
 	# 4 --> 5: expansion through ideal turbine
 	T05 = T04*(1 - (T02/T04)*(tau_c-1))
-	tau_t = T05/T04
-	p05 = p04*tau_t**((gamma-1)/gamma)
+	p05 = p04*(T05/T04)**(gamma/(gamma-1))
 
 	# 5 -- 7: Afterburner
 	p07 = p05
 	tau_ab = T07/T05
+	tau_t = T05/T04
 	tau_lamba_ab = tau_r*tau_c*tau_b*tau_t*tau_ab
 	f_ab = Cp*T/delta_HB*(tau_lamba_ab - tau_lamba*tau_t)
 	f_total = Cp*T/delta_HB*(tau_lamba_ab - tau_r)
@@ -244,39 +228,15 @@ def afterburningTurbojetWithBleeds(M,p,T,tpr,T07,eps1,eps2,eps3,p0ratio):
 
 def ramjet(M, p, T, T04, delta_HB):
 	a0 = np.sqrt(gamma*R*T)
-	u0 = M*a0
-	# 0 --> 2 : compression through ideal diffuser
 	p0 = p*(1+((gamma-1)/2)*M**2)**(gamma/(gamma-1))
-	T02 = T00 = T*(1+((gamma-1)/2)*M**2)
+	tau_r = (1+((gamma-1)/2)*M**2)
 	p02 = p0*milstd_5008_B(M)
-	tau_r = T00/T
 
-	# 2 --> 3: compression through ideal compressor
-	p03 = p02 # SKETCHY ASSUMPTIONS AAAAA!!!
-	T03 = T02
-	tau_c = T03/T02
+	tau_lamba = T04/T
+	f = Cp*T/delta_HB*(tau_lamba - tau_r)
 
-	# 3 --> 4: isobaric combustion process
-	tau_b = T04/T03
-	tau_lamba = tau_r*tau_c*tau_b
-	p04 = p03
-	f = Cp*(T04-T03)/(delta_HB-Cp*T04)
-	#f = Cp*T00/delta_HB * (tau_lamba - tau_r*tau_c)
-
-	# 4 --> 5: expansion through ideal turbine
-	T05 = T04*(1 - (T02/T04)*(tau_c-1))
-	tau_t = T05/T04
-	p05 = p04*tau_t**((gamma-1)/gamma)
-
-	# 7 --> 9: Nozzle
-	T09 = T05
-	p09 = p05
-
-	M9 = np.sqrt(2/(gamma-1)*(tau_r*tau_c*tau_t-1))
-	T9 = T09/(1+(gamma-1)/2*M9**2)
-	a9 = np.sqrt(gamma*R*T9)
-	u9 = M9*a9
-	ST = a0*M*((1+f)*u9/u0 -1)/g
+	u9 = a0*M*np.sqrt(tau_lamba/tau_r)
+	ST = a0/g*(u9/a0 - M)
 	SFC = f/ST
 	return [ST, SFC]
 

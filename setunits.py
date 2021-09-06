@@ -1,7 +1,3 @@
-from numpy import *
-import matplotlib
-import matplotlib.pyplot as plt
-
 ## variables
 global gamma, R, Cp, g, g0, R_SI,CP_SI,R_ENG,CP_ENG
 global convertBTU,StoHR,IN2toFT2,FtoR
