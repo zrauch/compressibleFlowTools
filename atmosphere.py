@@ -315,7 +315,7 @@ def atmosphereMach(q,M_list):
             exit(0)
 
         T0_list.append(temp*(1 + ((gamma-1)/2)*M**2))
-        P0_list.append(p_static* (1 + (gamma-1)/2*M**2)**(gamma/(gamma-1)))
+        P0_list.append(p_static* (1 + ((gamma-1)/2)*M**2)**(gamma/(gamma-1)))
         P_list.append(p_static)
 
     return [T0_list,T_list,P0_list,P_list,altitude_list]

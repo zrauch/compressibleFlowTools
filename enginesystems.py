@@ -232,11 +232,10 @@ def ramjet(M, p, T, T04, delta_HB):
 	tau_r = (1+((gamma-1)/2)*M**2)
 	p02 = p0*milstd_5008_B(M)
 
-	tau_lamba = T04/T
-	f = Cp*T/delta_HB*(tau_lamba - tau_r)
+	tau_lamba = T04/T # usually tau_r*tau_b*tau_c, but there are cancellations
+	f = Cp/delta_HB*(T04-tau_r*T)
 
-	u9 = a0*M*np.sqrt(tau_lamba/tau_r)
-	ST = a0/g*(u9/a0 - M)
+	ST = a0*M/g*(np.sqrt(tau_lamba/tau_r) - 1)
 	SFC = f/ST
 	return [ST, SFC]
 
