@@ -320,14 +320,12 @@ def atmosphereMach(q,M_list):
 
     return [T0_list,T_list,P0_list,P_list,altitude_list]
 
-
-# input values necessary for test case of each function
-qlist = [800, 1200, 1600] # given values of dynamic pressure [lbf/ft^2]
-altrange = linspace(0,100000,101)
-M_list = linspace(0.4,10,1001)
-
 test = 0
 if test:
+    # input values necessary for test case of each function
+    qlist = [800, 1200, 1600] # given values of dynamic pressure [lbf/ft^2]
+    altrange = linspace(0,100000,101)
+    M_list = linspace(0.4,10,1001)
     #atmosphere4 test case
     # plot output results for flight corridor over a range of altitudes
     fig,ax1 = plt.subplots()
