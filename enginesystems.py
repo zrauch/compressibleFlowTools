@@ -216,13 +216,14 @@ def ramjet(M, p, T, T04, delta_HB):
 	p02 = p0*milstd_5008_B(M)
 	
 	# 2 --> 3: isentropic ram compression
-	p04 = p02*(T04/T02)**((gamma-1)/gamma)
+	#p04 = p02*(T04/T02)**((gamma-1)/gamma)
+	#print(p04,p02)
 
 	# 3 --> 4: isobaric compression
 	f = Cp*(T04-T02)/delta_HB
 
 	# 4 --> 9: perfectly expanded exhaust conditions
-	u9 = np.sqrt(convertBTU*g * 2*Cp*T04*(1 - (p/p04)**((gamma-1)/gamma)))
+	u9 = np.sqrt(convertBTU*g * 2*Cp*T04*(1 - (p/p02)**((gamma-1)/gamma)))
 	st = ((1+f)*u9 - u0)
 	Isp = st/(f*g)
 	sfc = 1/Isp
