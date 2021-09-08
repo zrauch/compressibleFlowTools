@@ -72,9 +72,10 @@ def turbofan(M,h, p, T, pi_c, pi_f, B, T04, delta_HB):
 	u9 = np.sqrt(convertBTU*g* 2*Cp*T09*(1 - (p/p09)**((gamma-1)/gamma) ))
 	u9_p = np.sqrt(convertBTU*g* 2*Cp*T03_p*(1 - (p/p03_p)**((gamma-1)/gamma)))
 
-	specificThrust = (u0/(1+B)*((u9/u0 - 1) + B*(u9_p/u0 - 1)))/g
+	specificThrust = ((u9 - u0) + B*(u9_p - u0))/(1+B)
 	Isp = (((1+f)*u9-u0) + B*(u9_p-u0))/(f*g)
-	return [specificThrust, Isp]
+	sfc = 1/Isp
+	return [specificThrust,sfc,Isp,f]
 
 # turbojet :: a function to solve the complete IDEAL turbojet engine system.
 # Note that the equations derived for use in this function depend on some critical assumptions,
@@ -89,91 +90,69 @@ def turbofan(M,h, p, T, pi_c, pi_f, B, T04, delta_HB):
 # 1. specific thrust, ST [s]
 # 2. specific fuel consumption, SFC [check these units]
 def turbojet(M, p, T, pi_c, T04, delta_HB):
-	## IDEAL Turbofan Calculations
+	## IDEAL turbojet Calculations
 	a0 = np.sqrt(gamma*R*T)
 	u0 = M*a0
 	# 0 --> 2 : compression through ideal diffuser
 	p0 = p*(1+((gamma-1)/2)*M**2)**(gamma/(gamma-1))
 	T02 = T00 = T*(1+((gamma-1)/2)*M**2)
 	p02 = p0*milstd_5008_B(M)
-	tau_r = T00/T
-
 	# 2 --> 3: compression through ideal compressor
-	p03 = pi_c*p02
-	T03 = T02*(pi_c)**((gamma-1)/gamma)
-	tau_c = T03/T02
-
+	p03 = pi_c * p02
+	T03 = T02 * pi_c**((gamma-1)/gamma)
 	# 3 --> 4: isobaric combustion process
-	tau_b = T04/T03
-	tau_lamba = tau_r*tau_c*tau_b
 	p04 = p03
-	f = Cp*(T04-T03)/(delta_HB-Cp*T04)
-	#f = Cp*T00/delta_HB * (tau_lamba - tau_r*tau_c)
-
+	f = Cp*(T04-T03)/delta_HB
 	# 4 --> 5: expansion through ideal turbine
-	T05 = T04*(1 - (T02/T04)*(tau_c-1))/(1+f)
-	tau_t = T05/T04
-	p05 = p04*(T05/T04)**(gamma/(gamma-1))
-
+	T05 = T04 + (T02-T03)/(1+f)
+	p05 = p04 * (T05/T04)**(gamma/(gamma-1))
 	# 7 --> 9: Nozzle
 	T09 = T05
 	p09 = p05
-
 	## Ideal Turbojet
 	u9 = np.sqrt(convertBTU*g* 2*Cp*T09*(1 - (p/p09)**((gamma-1)/gamma)))
-	ST = a0*M*((1+f)*u9/u0 -1)/g
-	SFC = f/ST#*StoHR
-	return [ST, SFC]
+	ST = ((1+f)*u9 - u0)
+	Isp = ST/(f*g)
+	SFC = 1/Isp
+	return [ST,SFC,Isp,f]
 
 def afterburningTurbojet(M, p, T, pi_c, T04, T07, delta_HB):
-	## IDEAL Turbofan Calculations
+	## IDEAL Afterburning turbojet Calculations
 	a0 = np.sqrt(gamma*R*T)
 	u0 = M*a0
 	# 0 --> 2 : compression through ideal diffuser
 	p0 = p*(1+((gamma-1)/2)*M**2)**(gamma/(gamma-1))
 	T02 = T00 = T*(1+((gamma-1)/2)*M**2)
 	p02 = p0*milstd_5008_B(M)
-	tau_r = T00/T
 
 	# 2 --> 3: compression through ideal compressor
 	p03 = pi_c*p02
 	T03 = T02*(pi_c)**((gamma-1)/gamma)
-	tau_c = T03/T02
 
 	# 3 --> 4: isobaric combustion process
-	tau_b = T04/T03
-	tau_lamba = tau_r*tau_c*tau_b
 	p04 = p03
 	T03 = T02*(pi_c)**((gamma-1)/gamma)
-	f = Cp*(T04-T03)/(delta_HB-Cp*T04)
-	#f = Cp*T00/delta_HB * (tau_lamba - tau_r*tau_c)
+	f = Cp*(T04-T03)/delta_HB
 
 	# 4 --> 5: expansion through ideal turbine
-	T05 = T04*(1 - (T02/T04)*(tau_c-1))
+	T05 = T04 + (T02-T03)/(1+f)
 	p05 = p04*(T05/T04)**(gamma/(gamma-1))
 
 	# 5 -- 7: Afterburner
 	p07 = p05
-	tau_ab = T07/T05
-	tau_t = T05/T04
-	tau_lamba_ab = tau_r*tau_c*tau_b*tau_t*tau_ab
-	f_ab = Cp*T/delta_HB*(tau_lamba_ab - tau_lamba*tau_t)
-	f_total = Cp*T/delta_HB*(tau_lamba_ab - tau_r)
-	## NOTE: T07 fixed for the afterburner case (assumed to be maximum)
+	f_ab = (1+f)*Cp*(T07-T05)/delta_HB
+	f_total = f + f_ab
 
 	# 7 --> 9: Nozzle
 	T09 = T07
-	# p09 not needed
+	p09 = p07
 
 	## Ideal Afterburning Turbojet
-	#f_total = f+f_ab
-	M9 = np.sqrt(2/(gamma-1)*(tau_r*tau_c*tau_t-1))
-	T9 = T09/(1+(gamma-1)/2*M9**2)
-	a9 = np.sqrt(gamma*R*T9)
-	u9 = M9*a9
-	ST = a0*M*((1+f_total)*u9/u0 -1)/g
+	u9 = np.sqrt(convertBTU*g * 2*Cp*T09*(1 - (p/p09)**((gamma-1)/gamma)))
+	ST = ((1+f_total)*u9 - u0)
 	SFC = f_total/ST
-	return [ST, SFC]
+	Isp = ST/(f_total*g)
+	return [ST,SFC,Isp,f]
 
 def afterburningTurbojetWithBleeds(M,p,T,tpr,T07,eps1,eps2,eps3,p0ratio):
 	# 0 : Ambient Stagnation Conditions
@@ -227,17 +206,27 @@ def afterburningTurbojetWithBleeds(M,p,T,tpr,T07,eps1,eps2,eps3,p0ratio):
 	return [ST,SFC,T0_list,p0_list,M9,f_total,f_ab]
 
 def ramjet(M, p, T, T04, delta_HB):
+	# ideal ramjet calculations
 	a0 = np.sqrt(gamma*R*T)
+	u0 = M*a0
 	p0 = p*(1+((gamma-1)/2)*M**2)**(gamma/(gamma-1))
-	tau_r = (1+((gamma-1)/2)*M**2)
+	T00 = T * (1+((gamma-1)/2)*M**2)
+	# 0 --> 2: adiabatic mil-std inlet
+	T02 = T00
 	p02 = p0*milstd_5008_B(M)
+	
+	# 2 --> 3: isentropic ram compression
+	p04 = p02*(T04/T02)**((gamma-1)/gamma)
 
-	tau_lamba = T04/T # usually tau_r*tau_b*tau_c, but there are cancellations
-	f = Cp/delta_HB*(T04-tau_r*T)
+	# 3 --> 4: isobaric compression
+	f = Cp*(T04-T02)/delta_HB
 
-	ST = a0*M/g*(np.sqrt(tau_lamba/tau_r) - 1)
-	SFC = f/ST
-	return [ST, SFC]
+	# 4 --> 9: perfectly expanded exhaust conditions
+	u9 = np.sqrt(convertBTU*g * 2*Cp*T04*(1 - (p/p04)**((gamma-1)/gamma)))
+	st = ((1+f)*u9 - u0)
+	Isp = st/(f*g)
+	sfc = 1/Isp
+	return [st,sfc,Isp,f]
 
 def nozzleExitArea(M9,T09,p09,mdot):
 	T9 = T09/(1+(gamma-1)/2*M9**2)
