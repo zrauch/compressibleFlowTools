@@ -1,0 +1,11 @@
+problem   case=testes o/f=4,
+    rocket  equilibrium  frozen  nfz=1 
+  p,psia=100,200,
+react  
+  fuel=RP-1 
+  oxid=O2(L) 
+insert 
+  H2O(L) 
+output  massf 
+    plot isp p t ivac 
+end
