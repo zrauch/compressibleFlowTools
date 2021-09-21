@@ -1,6 +1,8 @@
 ## variables
 global gamma, R, Cp, g, g0, R_SI,CP_SI,R_ENG,CP_ENG
 global convertBTU,StoHR,IN2toFT2,FtoR
+options = ["Metric","metric","M","English","english","E","Imperial","imperial","I","Ass","ass"]
+isayso = 69
 
 try:
     g
@@ -11,7 +13,7 @@ except NameError:
     G_SI =      9.81 # m/s2
     # English constants
     R_ENG =     1716.55 # ft^2/s^2-R
-    CP_ENG =    0.30 # Btu/lbm-R
+    CP_ENG =    0.24 # Btu/lbm-R
     G_ENG =     32.17405 # ft-lbm/lbf-s2
 
     # conversion factors
@@ -20,9 +22,13 @@ except NameError:
     IN2toFT2 =      144 # [144 in2/ft2]
     FtoR =          459.67
 
-    inputfound = 0; count = 0; limit = 4
-    unitsys = input("Are you working in the Metric (M) or Imperial (I) unit system?\t")
-    options = ["Metric","metric","M","English","english","E","Imperial","imperial","I","Ass","ass"]
+    if (isayso):
+        unitsys = "I"
+    else:
+        inputfound = 0
+        count = 0; limit = 4
+        unitsys = input("Are you working in the Metric (M) or Imperial (I) unit system?\t")
+
     if (unitsys in options):
         inputfound = 1
 
@@ -49,6 +55,7 @@ except NameError:
         Cp = CP_ENG
         g = g0 = G_ENG
 
+    Pr = 0.72 # assume a constant Prandtl number for now
     gamma = Cp/(Cp-R/(convertBTU*g))
 else:
     print('setunits has already been called!')

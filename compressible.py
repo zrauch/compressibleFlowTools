@@ -1,18 +1,9 @@
 import numpy as np
-from numpy.linalg import inv
 import scipy as sp
-from scipy.signal import unit_impulse
 import sympy as sym
 import math
-import sys,os
 from scipy.optimize import fsolve
-import spatial_discretization
-
-## variables
-global gamma, R_SI,R_ENG
-R_SI = 287 # J/kg-K -- m^2/s^2-K
-R_ENG = 53.353 # ft-lbf/lbm-R -- needs multiplied by g for most applications
-R_ENG = 1717 # ft^2/s^2-R
+from setunits import *
 
 # inputfound = 0; count = 0; limit = 4
 # unitsys = input("Are you working in the Metric (M) or Imperial (I) unit system?\t")
@@ -119,6 +110,12 @@ def areaMachRelation(M_value,A_ratio,M_init): # see Mattingly&Boyer or Zucrow (1
 		eps = np.abs(M_new-M_guess)
 		M_guess = M_new
 	return M_new
+
+
+def areaMachRelation2(M1, Mx):
+	# NOTE: A_ratio is h1/hx
+	A_ratio = (Mx/M1) * ((2 + (gamma-1)*M1**2)/(2 + (gamma-1)*Mx**2))**((gamma+1)/(2*(gamma-1)))
+	return A_ratio
 
 # newtonRaphsonMach :: uses previously defined D function to iteratively solve for the value of Mach number
 # 					   downstream in a subsonic flow knowing the geometry.
@@ -344,7 +341,7 @@ def obliqueShockCalculator2(beta, M, gamma):
     theta = fsolve(equation,0.2)[0]
 
     term = M**2*np.sin(beta)**2
-    M2 = np.sqrt((1/np.sin(beta-theta)**2) * (1 + (gamma-1)/2*term)/(gamma*term - (gamma-1)/2)) # from NASA website
+    M2 = np.sqrt((1/np.sin(beta-theta)**2) * (2 + (gamma-1)*term)/(2*gamma*term - (gamma-1))) # from NASA website
     T_ratio = (2*gamma*term - (gamma-1))*((gamma-1)*term + 2)/((gamma+1)**2*term) # from NASA website
     p_ratio = (2*gamma*term - (gamma-1))/(gamma+1) # from NASA website
     term1 = pow(((gamma+1)*term)/((gamma-1)*term + 2),(gamma/(gamma-1)))

@@ -49,6 +49,7 @@ def atmosphere4(q,Hvector):
 
     M = zeros(size(Hvector))
     T0 = zeros(size(Hvector))
+    Tr = zeros(size(Hvector))
     temp = zeros(size(Hvector))
     p0 = zeros(size(Hvector))
     press = zeros(size(Hvector))
@@ -90,6 +91,7 @@ def atmosphere4(q,Hvector):
         M[n1] = sqrt(2.0*q/(gamma*press[n1]))
         p0[n1] = press[n1]*(1 + (gamma-1)/2 * M[n1]**2)**(gamma/(gamma-1))
         T0[n1] = temp[n1]*(1 + (gamma-1)/2 * M[n1]**2)
+        Tr[n1] = temp[n1]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n1]**2)
 
     # Index 2,  K2= 0
     if len(n2) > 0:
@@ -103,6 +105,7 @@ def atmosphere4(q,Hvector):
         M[n2] = sqrt(2.0*q/(gamma*press[n2]))
         p0[n2] = press[n2]*(1 + (gamma-1)/2 * M[n2]**2)**(gamma/(gamma-1))
         T0[n2] = temp[n2]*(1 + (gamma-1)/2 * M[n2]**2)
+        Tr[n2] = temp[n2]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n2]**2)
 
     # Index 3,  K3= .00054864
     if len(n3) > 0:
@@ -117,6 +120,7 @@ def atmosphere4(q,Hvector):
         M[n3] = sqrt(2.0*q/(gamma*press[n3]))
         p0[n3] = press[n3]*(1 + (gamma-1)/2 * M[n3]**2)**(gamma/(gamma-1))
         T0[n3] = temp[n3]*(1 + (gamma-1)/2 * M[n3]**2)
+        Tr[n3] = temp[n3]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n3]**2)
 
     # Index 4,  K4= .00153619
     if len(n4) > 0:
@@ -131,6 +135,7 @@ def atmosphere4(q,Hvector):
         M[n4] = sqrt(2.0*q/(gamma*press[n4]))
         p0[n4] = press[n4]*(1 + (gamma-1)/2 * M[n4]**2)**(gamma/(gamma-1))
         T0[n4] = temp[n4]*(1 + (gamma-1)/2 * M[n4]**2)
+        Tr[n4] = temp[n4]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n4]**2)
 
     # Index 5,  K5= 0
     if len(n5) > 0:
@@ -144,6 +149,7 @@ def atmosphere4(q,Hvector):
         M[n5] = sqrt(2.0*q/(gamma*press[n5]))
         p0[n5] = press[n5]*(1 + (gamma-1)/2 * M[n5]**2)**(gamma/(gamma-1))
         T0[n5] = temp[n5]*(1 + (gamma-1)/2 * M[n5]**2)
+        Tr[n5] = temp[n5]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n5]**2)
 
     # Index 6,  K6= -.00109728
     if len(n6) > 0:
@@ -158,6 +164,7 @@ def atmosphere4(q,Hvector):
         M[n6] = sqrt(2.0*q/(gamma*press[n6]))
         p0[n6] = press[n6]*(1 + (gamma-1)/2 * M[n6]**2)**(gamma/(gamma-1))
         T0[n6] = temp[n6]*(1 + (gamma-1)/2 * M[n6]**2)
+        Tr[n6] = temp[n6]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n6]**2)
 
     # Index 7,  K7= -.00219456
     if len(n7) > 0:
@@ -172,6 +179,7 @@ def atmosphere4(q,Hvector):
         M[n7] = sqrt(2.0*q/(gamma*press[n7]))
         p0[n7] = press[n7]*(1 + (gamma-1)/2 * M[n7]**2)**(gamma/(gamma-1))
         T0[n7] = temp[n7]*(1 + (gamma-1)/2 * M[n7]**2)
+        Tr[n7] = temp[n7]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n7]**2)
 
     # Index 8,  K8= 0
     if len(n8) > 0:
@@ -185,15 +193,16 @@ def atmosphere4(q,Hvector):
         M[n8] = sqrt(2.0*q/(gamma*press[n8]))
         p0[n8] = press[n8]*(1 + (gamma-1)/2 * M[n8]**2)**(gamma/(gamma-1))
         T0[n8] = temp[n8]*(1 + (gamma-1)/2 * M[n8]**2)
+        Tr[n8] = temp[n8]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n8]**2)
 
-    return [M,T0,temp,p0,press,rho,Hgeopvector]
+    return [M,T0,Tr,temp,p0,press,rho,Hgeopvector]
 
 # @author: geigerr
 # revised to be formatted as a function by zrauch
 def atmosphereMach(q,M_list):
     # initialize necessary lists for calculation and output of properties
     altitude_list = []
-    T0_list = []; T_list = []
+    T0_list = []; T_list = []; Tr_list = []
     P0_list = []; P_list = []
     for M in M_list:
         # atmosphereMach operates over a range of Mach numbers, not a range of altitudes like atmosphere4
@@ -315,10 +324,22 @@ def atmosphereMach(q,M_list):
             exit(0)
 
         T0_list.append(temp*(1 + ((gamma-1)/2)*M**2))
+        Tr_list.append(temp*(1 + ((gamma-1)/2)*(Pr**(1/3))*M**2))
         P0_list.append(p_static* (1 + ((gamma-1)/2)*M**2)**(gamma/(gamma-1)))
         P_list.append(p_static)
 
-    return [T0_list,T_list,P0_list,P_list,altitude_list]
+    # cutoff data where h goes negative
+    for i,alt in enumerate(altitude_list):
+        if alt<0:
+            M_list = M_list[i+1:]
+            altitude_list = altitude_list[i+1:]
+            T0_list = T0_list[i+1:]
+            Tr_list = Tr_list[i+1:]
+            T_list = T_list[i+1:]
+            P0_list = P0_list[i+1:]
+            P_list = P_list[i+1:]
+
+    return [T0_list,Tr_list,T_list,P0_list,P_list,altitude_list,M_list]
 
 test = 0
 if test:
