@@ -117,6 +117,12 @@ def areaMachRelation2(M1, Mx):
 	A_ratio = (Mx/M1) * ((2 + (gamma-1)*M1**2)/(2 + (gamma-1)*Mx**2))**((gamma+1)/(2*(gamma-1)))
 	return A_ratio
 
+def nonIsentropicAreaMachRelation(M1,M2, T01_T02, P02_P01,gamma):
+	# NOTE: A_ratio is h1/h2
+	A_ratio = np.sqrt(T01_T02) * (P02_P01) *(M2/M1) * ((2 + (gamma-1)*M1**2)/(2 + (gamma-1)*M2**2))**((gamma+1)/(2*(gamma-1)))
+	return A_ratio
+
+
 # newtonRaphsonMach :: uses previously defined D function to iteratively solve for the value of Mach number
 # 					   downstream in a subsonic flow knowing the geometry.
 # inputs :: initial mach number, M1
@@ -328,7 +334,11 @@ def obliqueShockCalculator(theta, M, gamma, shockType):
     term1 = pow(((gamma+1)*term)/((gamma-1)*term + 2),(gamma/(gamma-1)))
     term2 = pow(((gamma+1)/(2*gamma*term - (gamma-1))),(1/(gamma-1)))
     stagp_ratio = term1*term2
-    return b, M2, T_ratio, p_ratio, stagp_ratio
+
+    r = (gamma+1)*term / ((gamma-1)*term + 2)
+    thetaMax = np.arctan((r-1)/(2*r**0.5))
+
+    return b, M2, T_ratio, p_ratio, stagp_ratio, thetaMax
 
 def obliqueShockCalculator2(beta, M, gamma):
     #betaRange = np.linspace(0.001,np.pi/2,1001) # brute force through all possible beta values
