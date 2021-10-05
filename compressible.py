@@ -42,6 +42,10 @@ def massFlow(p0,T0,A,M):
 	mdot = p0*A/np.sqrt(T0)*np.sqrt(gamma/R)*D(M,gamma)[0]
 	return mdot
 
+def solveAfromMassFlow(mdot,M, p0,T0,R,gamma):
+	A = mdot*np.sqrt(T0*R/gamma)/(p0*M) * (1 + (gamma-1)/2*M**2)**((gamma+1)/(2*(gamma-1)))
+	return A
+
 # solveMfromMassFlow :: uses fsolve to determine the solutions of Mach number for which a 
 # 						certain mass flow rate value can be attained at given conditions.
 # inputs :: required mass flow rate, mdot [kg/s or lbm/s]
