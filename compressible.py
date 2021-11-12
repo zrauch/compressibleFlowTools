@@ -5,33 +5,6 @@ import math
 from scipy.optimize import fsolve
 from setunits import *
 
-# inputfound = 0; count = 0; limit = 4
-# unitsys = input("Are you working in the Metric (M) or Imperial (I) unit system?\t")
-# options = ["Metric","metric","M","English","english","E","Imperial","imperial","I","Ass","ass"]
-# if (unitsys in options):
-# 	inputfound = 1
-
-# while (not inputfound):
-# 	if (count == 0):
-# 		print(unitsys,"is not a valid input, please enter one of the following:")
-# 		print(options)
-# 	unitsys = input("Are you working in the Metric (M) or Imperial (I) unit system?\t")
-# 	count+=1
-# 	if (unitsys in options):
-# 		inputfound = 1
-# 	elif (count == limit):
-# 		print("\nHEY! \nstop being a dumbass and enter one of the values above. Last chance.")
-# 	elif (count > limit):
-# 		print("\nget outta here you filthy animal")
-# 		exit(0)
-
-# if (options.index(unitsys) < 3):
-# 	R = R_SI
-# else:
-# 	R = R_ENG
-
-# gamma = 1.4
-
 # massFlow :: equation for mass flow rate in terms of Mach, Area, and stagnation conditions
 # inputs :: stagnation pressure, p0			[Pa or psf]
 # 			stagnation temperature,T0 		[K or R]
@@ -67,6 +40,18 @@ def solveMfromMassFlow(mdot,p0,T0,A,regime):
 
 # D (mass flow function) :: Returns the mass flow and derivative for a given M and gamma
 def D(M,gamma): # see Mattingly and Boyer
+	M_2 = pow(M,2)
+	isen = (1 + ((gamma-1)/2)*M_2)
+	power = (gamma+1)/(2*(gamma-1))
+	D = M/pow(isen,power)
+
+	if M == 0:
+		dD_dM = float("inf")
+	else:
+		dD_dM = (D/M)*(1-M_2)/isen
+	return D,dD_dM
+
+def Dfunction(M,gamma): # see Mattingly and Boyer
 	M_2 = pow(M,2)
 	isen = (1 + ((gamma-1)/2)*M_2)
 	power = (gamma+1)/(2*(gamma-1))
@@ -407,11 +392,12 @@ def findSonicLocation(flowClass):
 
 def Gfunction(x,M,flowClass):
 	z = sym.symbols('z')
-	dT0_dx = flowClass.energyEquation(x)
-	T0 = flowClass.T01 + z*dT0_dx
-	A_x, dA_dx = flowClass.flowArea(z)
-	D_x, dD_dx = flowClass.flowDiameter(z)
-	mdot_x, dmdot_dx = flowClass.massflowrate(z)
+	T0, dT0_dx = flowClass.energyEquation(x,z)
+	#T0, dT0_dx = flowClass.T0x,flowClass.dT0dx
+	#print(T0,dT0_dx)
+	A_x, dA_dx = flowClass.flowArea(x,z)
+	D_x, dD_dx = flowClass.flowDiameter(x,z)
+	mdot_x, dmdot_dx, _= flowClass.massflowrate(x,z)
 	G_sym = (-dA_dx/A_x + flowClass.gamma*M**2*4*flowClass.f/(2*D_x) + (1+flowClass.gamma*M**2)*dT0_dx/(2*T0) + (1+flowClass.gamma*M**2)*dmdot_dx/mdot_x) 
 	dG_dx_sym = -2*sym.diff(dA_dx/A_x) + flowClass.gamma*sym.diff(4*flowClass.f/D_x) + (1+flowClass.gamma)*sym.diff(dT0_dx/T0) + 2*(1+flowClass.gamma)*sym.diff(dmdot_dx/mdot_x)
 	if isinstance(G_sym,sym.Basic):
@@ -420,7 +406,6 @@ def Gfunction(x,M,flowClass):
 		return G_num,dGdx_num
 	else:
 		return G_sym,dG_dx_sym
-
 
 def generalized1Dflow(x,M,flowClass):
 	if np.abs(M-1)<5e-2: # singularity case, if M is near 1	
@@ -434,4 +419,33 @@ def generalized1Dflow(x,M,flowClass):
 		psi_M = 1 + (flowClass.gamma-1)/2 * M**2
 		dM_dx = (M*psi_M/(1-M**2)) * Gfunction(x,M,flowClass)[0]
 	return dM_dx
+
+def Gfunction_numeric(x,M,flowClass):
+	z = "garbo"
+	#T0, dT0_dx = flowClass.energyEquation(x,z)
+	T0, dT0_dx = flowClass.T0x,flowClass.dT0dx
+	#print(T0,dT0_dx)
+	A_x, dA_dx = flowClass.flowArea(x,z)
+	D_x, dD_dx = flowClass.flowDiameter(x,z)
+	mdot_x, dmdot_dx, _= flowClass.massflowrate(x,z)
+	G_num = (-dA_dx/A_x + flowClass.gamma*M**2*4*flowClass.f/(2*D_x) + (1+flowClass.gamma*M**2)*dT0_dx/(2*T0) + (1+flowClass.gamma*M**2)*dmdot_dx/mdot_x) 
+	dGdx_num = -2*sym.diff(dA_dx/A_x) + flowClass.gamma*sym.diff(4*flowClass.f/D_x) + (1+flowClass.gamma)*sym.diff(dT0_dx/T0) + 2*(1+flowClass.gamma)*sym.diff(dmdot_dx/mdot_x)
+	return G_num,dGdx_num
+
+def generalized1Dflow_numeric(x,M,flowClass):
+	if np.abs(M-1)<1e-8: # singularity case, if M is near 1	
+		if flowClass.MachStart<1:
+			dM_dx = flowClass.dMdx_sp[1] # positive solution -- M should increase towards and after the throat if flow starts subsonic
+		elif flowClass.MachStart>1:
+			dM_dx = flowClass.dMdx_sp[0] # negative solution -- M should decrease towards and after the throat if flow starts supersonic
+		else:
+			print("you can't specify a starting Mach number of 1 you fucking idiot")
+	else: # general case
+		psi_M = 1 + (flowClass.gamma-1)/2 * M**2
+		dM_dx = (M*psi_M/(1-M**2)) * Gfunction_numeric(x,M,flowClass)[0]
+	return dM_dx
+
+def stagTempRK4(x,T0,flowClass):
+	return (flowClass.deltaH_B/flowClass.Cp - flowClass.T0x) * (flowClass.massflowrate(x,"garbo")[1]/flowClass.massflowrate(x,"garbo")[0])
+
 

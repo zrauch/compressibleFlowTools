@@ -13,14 +13,14 @@ global RE,D,K,T,H,P,RHO
 RE=20926476
 
 D=array(
-[[1,    -0.00356616,    518.67, 0,              2116.22,                0.00237691267925741],
-[2,     0,              389.97, 36089.239,      472.675801650081,       0.000706115448911997],
-[3,     0.00054864,     389.97, 65616.798,      114.343050672041,       0.000170813471460564],
-[4,     0.00153619,     411.57, 104986.878,     18.1283133205764,       2.56600341257735e-05],
-[5,     0,              487.17, 154199.475,     2.31620845720195,       2.76975106424479e-06],
-[6,     -0.00109728,    487.17, 170603.675,     1.23219156244977,       1.47347009326248e-06],
-[7,     -0.00219456,    454.17, 200131.234,     0.38030066501701,       4.87168173794687e-07],
-[8,     0,              325.17, 259186.352,     0.0215739175227548,     3.86714900013768e-08]])
+[[0,    -0.00356616,    518.67, 0,              2116.22,                0.00237691267925741],
+[1,     0,              389.97, 36089.239,      472.675801650081,       0.000706115448911997],
+[2,     0.00054864,     389.97, 65616.798,      114.343050672041,       0.000170813471460564],
+[3,     0.00153619,     411.57, 104986.878,     18.1283133205764,       2.56600341257735e-05],
+[4,     0,              487.17, 154199.475,     2.31620845720195,       2.76975106424479e-06],
+[5,     -0.00109728,    487.17, 170603.675,     1.23219156244977,       1.47347009326248e-06],
+[6,     -0.00219456,    454.17, 200131.234,     0.38030066501701,       4.87168173794687e-07],
+[7,     0,              325.17, 259186.352,     0.0215739175227548,     3.86714900013768e-08]])
 
 K=D[:,1]
 T=D[:,2]
@@ -78,7 +78,7 @@ def atmosphere4(q,Hvector):
         icorrect
         ih
 
-    # Index 1, Troposphere, K1= -.00356616
+    # Index 0, Troposphere, K1= -.00356616
     if len(n1) > 0:
         i=0
         h=Hgeopvector[n1]
@@ -93,7 +93,7 @@ def atmosphere4(q,Hvector):
         T0[n1] = temp[n1]*(1 + (gamma-1)/2 * M[n1]**2)
         Tr[n1] = temp[n1]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n1]**2)
 
-    # Index 2,  K2= 0
+    # Index 1,  K2= 0
     if len(n2) > 0:
         i=1
         h=Hgeopvector[n2]
@@ -107,7 +107,7 @@ def atmosphere4(q,Hvector):
         T0[n2] = temp[n2]*(1 + (gamma-1)/2 * M[n2]**2)
         Tr[n2] = temp[n2]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n2]**2)
 
-    # Index 3,  K3= .00054864
+    # Index 2,  K3= .00054864
     if len(n3) > 0:
         i=2
         h=Hgeopvector[n3]
@@ -122,7 +122,7 @@ def atmosphere4(q,Hvector):
         T0[n3] = temp[n3]*(1 + (gamma-1)/2 * M[n3]**2)
         Tr[n3] = temp[n3]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n3]**2)
 
-    # Index 4,  K4= .00153619
+    # Index 3,  K4= .00153619
     if len(n4) > 0:
         i=3
         h=Hgeopvector[n4]
@@ -137,7 +137,7 @@ def atmosphere4(q,Hvector):
         T0[n4] = temp[n4]*(1 + (gamma-1)/2 * M[n4]**2)
         Tr[n4] = temp[n4]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n4]**2)
 
-    # Index 5,  K5= 0
+    # Index 4,  K5= 0
     if len(n5) > 0:
         i=4
         h=Hgeopvector[n5]
@@ -151,7 +151,7 @@ def atmosphere4(q,Hvector):
         T0[n5] = temp[n5]*(1 + (gamma-1)/2 * M[n5]**2)
         Tr[n5] = temp[n5]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n5]**2)
 
-    # Index 6,  K6= -.00109728
+    # Index 5,  K6= -.00109728
     if len(n6) > 0:
         i=5
         h=Hgeopvector[n6]
@@ -166,7 +166,7 @@ def atmosphere4(q,Hvector):
         T0[n6] = temp[n6]*(1 + (gamma-1)/2 * M[n6]**2)
         Tr[n6] = temp[n6]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n6]**2)
 
-    # Index 7,  K7= -.00219456
+    # Index 6,  K7= -.00219456
     if len(n7) > 0:
         i=6
         h=Hgeopvector[n7]
@@ -181,7 +181,7 @@ def atmosphere4(q,Hvector):
         T0[n7] = temp[n7]*(1 + (gamma-1)/2 * M[n7]**2)
         Tr[n7] = temp[n7]*(1 + (gamma-1)/2 * (Pr**(1/3)) * M[n7]**2)
 
-    # Index 8,  K8= 0
+    # Index 7,  K8= 0
     if len(n8) > 0:
         i=7
         h=Hgeopvector[n8]
@@ -199,7 +199,9 @@ def atmosphere4(q,Hvector):
 
 # @author: geigerr
 # revised to be formatted as a function by zrauch
-def atmosphereMach(q,M_list):
+def atmosphereMach(q,M_list,*args):
+    # unpack arguments
+    includeNegativeH = args
     # initialize necessary lists for calculation and output of properties
     altitude_list = []
     T0_list = []; T_list = []; Tr_list = []
@@ -208,7 +210,7 @@ def atmosphereMach(q,M_list):
         # atmosphereMach operates over a range of Mach numbers, not a range of altitudes like atmosphere4
         p_static = 2.0*q/(gamma*M**2)
         # next determine which range of h you are in based on Mach number and static p
-        if(p_static > P[1]):
+        if(p_static > P[1] and p_static < P[0]):
             index = 0
             K_i = K[index]
             T_i = T[index]
@@ -223,7 +225,7 @@ def atmosphereMach(q,M_list):
             altitude_list.append(h)
             T_list.append(temp)
         
-        elif(p_static > P[2]):
+        elif(p_static > P[2] and p_static < P[1]):
             index = 1
             K_i = K[index]
             T_i = T[index]
@@ -236,7 +238,7 @@ def atmosphereMach(q,M_list):
             h = H_i + (T_i*R*log(PonPi))/(-1*g0) 
             altitude_list.append(h)
             T_list.append(temp)
-        elif(p_static > P[3]):
+        elif(p_static > P[3] and p_static < P[2]):
             index = 2
             K_i = K[index]
             T_i = T[index]
@@ -250,7 +252,7 @@ def atmosphereMach(q,M_list):
             h = H_i + (T_i*(TonTi - 1))/K_i 
             altitude_list.append(h)
             T_list.append(temp)
-        elif(p_static > P[4]):
+        elif(p_static > P[4] and p_static < P[3]):
             index = 3
             K_i = K[index]
             T_i = T[index]
@@ -264,7 +266,7 @@ def atmosphereMach(q,M_list):
             h = H_i + (T_i*(TonTi - 1))/K_i 
             altitude_list.append(h)
             T_list.append(temp)
-        elif(p_static > P[5]):
+        elif(p_static > P[5] and p_static < P[4]):
             index = 4
             K_i = K[index]
             T_i = T[index]
@@ -277,7 +279,7 @@ def atmosphereMach(q,M_list):
             h = H_i + (T_i*R*log(PonPi))/(-1*g0) 
             altitude_list.append(h)
             T_list.append(temp)
-        elif(p_static > P[6]):
+        elif(p_static > P[6] and p_static < P[5]):
             index = 5
             K_i = K[index]
             T_i = T[index]
@@ -291,7 +293,7 @@ def atmosphereMach(q,M_list):
             h = H_i + (T_i*(TonTi - 1))/K_i 
             altitude_list.append(h)
             T_list.append(temp)
-        elif(p_static > P[7]):
+        elif(p_static > P[7] and p_static < P[6]):
             index = 6
             K_i = K[index]
             T_i = T[index]
@@ -319,9 +321,20 @@ def atmosphereMach(q,M_list):
             altitude_list.append(h)
             T_list.append(temp)
         elif(p_static>P[0]):
-            print("Error! Static pressure value is greater than static pressure at sea level!")
-            print("Exiting now, please check your inputs to make sure the static pressure is physically possible!")
-            exit(0)
+            index = 0
+            K_i = K[index]
+            T_i = T[index]
+            H_i = H[index]
+            RHO_i = RHO[index]
+            P_i = P[index]
+            
+            PonPi = p_static / P_i
+            TonTi = PonPi**(-K_i*R/g0)
+            temp = TonTi * T_i
+            h = H_i + (T_i*(TonTi - 1))/K_i 
+            altitude_list.append(h)
+            T_list.append(temp)
+            print("Warning! Static pressure value is greater than static pressure at sea level!")
 
         T0_list.append(temp*(1 + ((gamma-1)/2)*M**2))
         Tr_list.append(temp*(1 + ((gamma-1)/2)*(Pr**(1/3))*M**2))
@@ -329,15 +342,16 @@ def atmosphereMach(q,M_list):
         P_list.append(p_static)
 
     # cutoff data where h goes negative
-    for i,alt in enumerate(altitude_list):
-        if alt<0:
-            M_list = M_list[i+1:]
-            altitude_list = altitude_list[i+1:]
-            T0_list = T0_list[i+1:]
-            Tr_list = Tr_list[i+1:]
-            T_list = T_list[i+1:]
-            P0_list = P0_list[i+1:]
-            P_list = P_list[i+1:]
+    if not includeNegativeH:
+        for i,alt in enumerate(altitude_list):
+            if alt<0:
+                M_list = M_list[i+1:]
+                altitude_list = altitude_list[i+1:]
+                T0_list = T0_list[i+1:]
+                Tr_list = Tr_list[i+1:]
+                T_list = T_list[i+1:]
+                P0_list = P0_list[i+1:]
+                P_list = P_list[i+1:]
 
     return [T0_list,Tr_list,T_list,P0_list,P_list,altitude_list,M_list]
 
