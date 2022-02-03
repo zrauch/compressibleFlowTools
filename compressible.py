@@ -5,6 +5,15 @@ import math
 from scipy.optimize import fsolve
 from setunits import *
 
+# generic RK4 stencil for numerical integration
+def RK4(y,x,dx,function,parameters):
+	k1 = function(x, y, parameters)
+	k2 = function(x+0.5*dx, y+0.5*k1*dx, parameters)
+	k3 = function(x+0.5*dx, y+0.5*k2*dx, parameters)
+	k4 = function(x+dx, y+k3*dx, parameters)
+	y += dx/6*(k1+2*k2+2*k3+k4)
+	return y
+
 # massFlow :: equation for mass flow rate in terms of Mach, Area, and stagnation conditions
 # inputs :: stagnation pressure, p0			[Pa or psf]
 # 			stagnation temperature,T0 		[K or R]
