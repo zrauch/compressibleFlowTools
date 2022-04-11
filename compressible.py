@@ -11,8 +11,16 @@ def RK4(y,x,dx,function,parameters):
 	k2 = function(x+0.5*dx, y+0.5*k1*dx, parameters)
 	k3 = function(x+0.5*dx, y+0.5*k2*dx, parameters)
 	k4 = function(x+dx, y+k3*dx, parameters)
-	y += dx/6*(k1+2*k2+2*k3+k4)
-	return y
+	y_new = y + dx/6*(k1+2*k2+2*k3+k4)
+	return y_new
+
+def RK4_stagP(M,P0,x,dx,function,parameters):
+	k1 = function(x, M, parameters)
+	k2 = function(x+0.5*dx, M, parameters)
+	k3 = function(x+0.5*dx, M, parameters)
+	k4 = function(x+dx, M, parameters)
+	P0_new = P0 + P0*dx/6*(k1+2*k2+2*k3+k4)
+	return P0_new
 
 # massFlow :: equation for mass flow rate in terms of Mach, Area, and stagnation conditions
 # inputs :: stagnation pressure, p0			[Pa or psf]
@@ -98,7 +106,8 @@ def N(M,gamma): # see Mattingly and Boyer
 # 			initial Mach number guess, M_init
 # outputs :: final (downstream) Mach number, M_new
 # NOTE :: the return value of M_new depends on M_init. if M_init > 1, M_new will be > 1. If M_init < 1, M_new < 1.
-def areaMachRelation(M_value,A_ratio,M_init): # see Mattingly&Boyer or Zucrow (1976)
+def areaMachRelation(M_value,A_ratio,M_init,*param): # see Mattingly&Boyer or Zucrow (1976)
+	gamma = param[0]
 	DM = D(M_value,gamma)[0]
 	M_guess = M_init
 	eps = 1 # initialize with eps > delta
@@ -406,7 +415,7 @@ def Gfunction(x,M,flowClass):
 	#print(T0,dT0_dx)
 	A_x, dA_dx = flowClass.flowArea(x,z)
 	D_x, dD_dx = flowClass.flowDiameter(x,z)
-	mdot_x, dmdot_dx, _= flowClass.massflowrate(x,z)
+	mdot_x, dmdot_dx = flowClass.massflowrate(x,z)
 	G_sym = (-dA_dx/A_x + flowClass.gamma*M**2*4*flowClass.f/(2*D_x) + (1+flowClass.gamma*M**2)*dT0_dx/(2*T0) + (1+flowClass.gamma*M**2)*dmdot_dx/mdot_x) 
 	dG_dx_sym = -2*sym.diff(dA_dx/A_x) + flowClass.gamma*sym.diff(4*flowClass.f/D_x) + (1+flowClass.gamma)*sym.diff(dT0_dx/T0) + 2*(1+flowClass.gamma)*sym.diff(dmdot_dx/mdot_x)
 	if isinstance(G_sym,sym.Basic):
@@ -436,13 +445,14 @@ def Gfunction_numeric(x,M,flowClass):
 	#print(T0,dT0_dx)
 	A_x, dA_dx = flowClass.flowArea(x,z)
 	D_x, dD_dx = flowClass.flowDiameter(x,z)
-	mdot_x, dmdot_dx, _= flowClass.massflowrate(x,z)
+	mdot_x, dmdot_dx = flowClass.massflowrate(x,z)
 	G_num = (-dA_dx/A_x + flowClass.gamma*M**2*4*flowClass.f/(2*D_x) + (1+flowClass.gamma*M**2)*dT0_dx/(2*T0) + (1+flowClass.gamma*M**2)*dmdot_dx/mdot_x) 
-	dGdx_num = -2*sym.diff(dA_dx/A_x) + flowClass.gamma*sym.diff(4*flowClass.f/D_x) + (1+flowClass.gamma)*sym.diff(dT0_dx/T0) + 2*(1+flowClass.gamma)*sym.diff(dmdot_dx/mdot_x)
-	return G_num,dGdx_num
+	# dGdx_num isn't actually used (???) so i'm ignoring it because the sym.diff is throwing errors
+	#dGdx_num = -2*sym.diff(dA_dx/A_x) + flowClass.gamma*sym.diff(4*flowClass.f/D_x) + (1+flowClass.gamma)*sym.diff(dT0_dx/T0) + 2*(1+flowClass.gamma)*sym.diff(dmdot_dx/mdot_x)
+	return G_num
 
 def generalized1Dflow_numeric(x,M,flowClass):
-	if np.abs(M-1)<1e-8: # singularity case, if M is near 1	
+	if np.any((M-1)<1e-8): # singularity case, if M is near 1
 		if flowClass.MachStart<1:
 			dM_dx = flowClass.dMdx_sp[1] # positive solution -- M should increase towards and after the throat if flow starts subsonic
 		elif flowClass.MachStart>1:
@@ -451,8 +461,17 @@ def generalized1Dflow_numeric(x,M,flowClass):
 			print("you can't specify a starting Mach number of 1 you fucking idiot")
 	else: # general case
 		psi_M = 1 + (flowClass.gamma-1)/2 * M**2
-		dM_dx = (M*psi_M/(1-M**2)) * Gfunction_numeric(x,M,flowClass)[0]
+		dM_dx = (M*psi_M/(1-M**2)) * Gfunction_numeric(x,M,flowClass)
 	return dM_dx
+
+def stagPressureRK4(x,M,flowClass):
+	z = "garbo"
+	T0, dT0_dx = flowClass.T0x,flowClass.dT0dx
+	D_x, dD_dx = flowClass.flowDiameter(x,z)
+	mdot_x, dmdot_dx = flowClass.massflowrate(x,z)
+	dP0_P0 = (-flowClass.gamma*M**2/2)*flowClass.gamma*M**2*4*flowClass.f/(2*D_x) - (-flowClass.gamma*M**2/2)*(dT0_dx/T0) - flowClass.gamma*M**2*(dmdot_dx/mdot_x)
+	print(dP0_P0)
+	return dP0_P0
 
 def stagTempRK4(x,T0,flowClass):
 	return (flowClass.deltaH_B/flowClass.Cp - flowClass.T0x) * (flowClass.massflowrate(x,"garbo")[1]/flowClass.massflowrate(x,"garbo")[0])
