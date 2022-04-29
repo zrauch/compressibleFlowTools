@@ -10,10 +10,11 @@ MIN_TO_S = 60           # 1 min =  60 s
 
 # ANGULAR CONVERSIONS
 REV_TO_RAD = 2*np.pi    # 1 rev = 2*pi rad
-IN_TO_M = 0.0254        # 1 in = 0.0254 m
 
 # DISTANCE CONVERSIONS
+IN_TO_M = 0.0254        # 1 in = 0.0254 m
 FT_TO_IN = 12           # 1 ft = 12 in
+M_TO_FT = 3.28084       # 1 m = 3.28084 ft
 
 # VOLUME CONVERSIONS
 M3_TO_L = 1e-3          # 1 m3 = 1000 L

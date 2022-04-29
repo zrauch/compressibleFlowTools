@@ -452,7 +452,7 @@ def Gfunction_numeric(x,M,flowClass):
 	return G_num
 
 def generalized1Dflow_numeric(x,M,flowClass):
-	if np.any((M-1)<1e-8): # singularity case, if M is near 1
+	if np.any(abs(M-1)<1e-8): # singularity case, if M is near 1
 		if flowClass.MachStart<1:
 			dM_dx = flowClass.dMdx_sp[1] # positive solution -- M should increase towards and after the throat if flow starts subsonic
 		elif flowClass.MachStart>1:
