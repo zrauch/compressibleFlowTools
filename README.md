@@ -3,13 +3,6 @@ A library of compressible flow tools like area mach relation, mass flow function
 Originally developed during AAE 538 (Air-breathing propulsion) at Purdue University. Adapted over the duration of my graduate coursework including
 ME 510 (Gas Dynamics), AAE 537 (Hypersonic propulsion), and AAE 539 (Rocket Propulsion).
 
-NOTES/ACKNOWLEDGEMENTS:
-this repository contains code borrowed from GitHub user nespinoza's repository called 'pyCEA' (https://github.com/nespinoza/pyCEA). This repository has been deprecated, and thus I had to create a local copy of pyCEA in order to update the internal code to communicate with CEA+FORTRAN properly on a new unix system.
-Please see the link to pyCEA above for instructions on how to use pyCEA.
-
-additional recognition to the Utah State University Department of Mechanical and Aerospace Engineering for having the only remaining copy of the CEA
-FORTRAN source code with very thorough installation instructions. (http://mae-nas.eng.usu.edu/MAE_5540_Web/propulsion_systems/section7.html)
-
 # How to use compFlowTools
 1. clone this repository to a local location on your working machine
   a. clone to the location where you wish to use these modules (your working directory for your .py script)
